@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/safety_Layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Crimes -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center">
+
+                <!-- Circular Progress Bar -->
+                <ProgressBar
+                    android:id="@+id/crimeProgressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:indeterminate="false"
+                    android:max="100"
+                    android:progressTint="@color/colorGreen"
+                    android:progressDrawable="@drawable/circular_progress_bar"/>
+
+                <!-- Crime Count Text -->
+                <TextView
+                    android:id="@+id/crimeCountTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:textColor="#000000"
+                    android:gravity="center"
+                    android:layout_gravity="center"/>
+
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/crimeTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:textColor="#1C1311"
+                android:text="Crimes"
+                android:textSize="10sp"
+                android:layout_gravity="center"
+                android:fontFamily="@font/neuehaasdisplayroman"/>
+
+        </LinearLayout>
+
+        <!-- CCTV -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center">
+
+                <!-- Circular Progress Bar -->
+                <ProgressBar
+                    android:id="@+id/cctvProgressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:indeterminate="false"
+                    android:max="100"
+                    android:progressTint="@color/colorGreen"
+                    android:progressDrawable="@drawable/circular_progress_bar"/>
+
+                <!-- CCTV Count Text -->
+                <TextView
+                    android:id="@+id/cctvCountTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:textColor="#000000"
+                    android:gravity="center"
+                    android:layout_gravity="center"/>
+
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/cctvTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:textColor="#1C1311"
+                android:text="CCTV"
+                android:textSize="10sp"
+                android:layout_gravity="center"
+                android:fontFamily="@font/neuehaasdisplayroman"/>
+
+        </LinearLayout>
+
+        <!-- Streetlights -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center">
+
+                <!-- Circular Progress Bar -->
+                <ProgressBar
+                    android:id="@+id/streetlightProgressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:indeterminate="false"
+                    android:max="100"
+                    android:progressDrawable="@drawable/circular_progress_bar"/>
+
+                <!-- Streetlights Count Text -->
+                <TextView
+                    android:id="@+id/streetlightCountTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:textColor="#000000"
+                    android:gravity="center"
+                    android:layout_gravity="center"/>
+
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/streetlightTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:textColor="#1C1311"
+                android:text="Streetlights"
+                android:textSize="10sp"
+                android:layout_gravity="center"
+                android:fontFamily="@font/neuehaasdisplayroman"/>
+
+        </LinearLayout>
+
+        <!-- Police Station -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center">
+
+                <!-- Circular Progress Bar -->
+                <ProgressBar
+                    android:id="@+id/policeProgressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:indeterminate="false"
+                    android:max="100"
+                    android:progressDrawable="@drawable/circular_progress_bar"/>
+
+                <!-- Police Count Text -->
+                <TextView
+                    android:id="@+id/policeCountTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:textColor="#000000"
+                    android:gravity="center"
+                    android:layout_gravity="center"/>
+
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/policeTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:textColor="#1C1311"
+                android:text="Police Station"
+                android:textSize="10sp"
+                android:layout_gravity="center"
+                android:fontFamily="@font/neuehaasdisplayroman"/>
+
+        </LinearLayout>
+
+        <!-- Similarly add other layouts if needed -->
+    </LinearLayout>
+</LinearLayout>
