@@ -12,10 +12,11 @@
             android:fromDegrees="270"
             android:toDegrees="270">
             <shape android:shape="ring"
-                android:innerRadiusRatio="3"
+                android:innerRadiusRatio="2.6"
                 android:useLevel="true">
                 <solid android:color="?attr/colorProgress"/> <!-- Use dynamic color attribute -->
             </shape>
         </rotate>
     </item>
 </layer-list>
+
