@@ -1,5 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values/colors.xml -->
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="safeColor">#4CAF50</color> <!-- Green color for safe condition -->
+    <color name="mediumColor">#FFC107</color> <!-- Yellow color for moderate condition -->
+    <color name="dangerColor">#F44336</color> <!-- Red color for dangerous condition -->
 </resources>
