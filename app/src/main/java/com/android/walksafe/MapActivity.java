@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 
 import com.google.android.gms.common.api.Status;
@@ -48,6 +49,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private boolean locationPermissionGranted;
     private GoogleMap gMap;
+    private View mapCardView;
     private static final String TAG = "Info";
     private FusedLocationProviderClient fusedLocationProviderClient;
     private final LatLng defaultLocation = new LatLng(0, 0); // Default to the equator
@@ -62,9 +64,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private CCTVData cctvData;
     private PoliceStationData policeStationData;
     private StreetlightData streetlightData;
+    private SafetyIndex safetyIndex;
 
     private View bottomSheet;
-    private LinearLayout safetyLayout;
+    private LinearLayout metricsLayout;
+    private LinearLayout overallsafetyLayout;
     private LinearLayout bottomSheetLayout;
     private BottomSheetBehavior bottomSheetBehavior;
 
@@ -76,6 +80,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private TextView policeCountTextView;
     private ProgressBar streetlightProgressBar;
     private TextView streetlightTextView;
+    private ProgressBar overallsafetyProgressBar;
+    private TextView overallsafetyTextView;
 
 
     @Override
@@ -87,7 +93,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         // Initialize map
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
+
+        mapCardView = findViewById(R.id.mapCardView);
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this); // Initialize fused location provider
         polylines = new ArrayList<>(); // Initialize polylines list
@@ -98,10 +108,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         policeStationData = new PoliceStationData(this, gMap);
         streetlightData = new StreetlightData(this, gMap);
 
+        // Initialize Safety Index
+        safetyIndex = new SafetyIndex(this, gMap);
+
         // Find views
         bottomSheet = findViewById(R.id.bottomSheetLinearLayout);
-        bottomSheetLayout = findViewById(R.id.safetyLinearLayout);
-        safetyLayout = findViewById(R.id.safety_Layout);
+        bottomSheetLayout = findViewById(R.id.metricsLinearLayout);
+        metricsLayout = findViewById(R.id.metrics_Layout);
+        overallsafetyLayout = findViewById(R.id.overallsafety_Layout);
 
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
@@ -115,6 +129,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         policeCountTextView = findViewById(R.id.policeCountTextView);
         streetlightProgressBar = findViewById(R.id.streetlightProgressBar);
         streetlightTextView = findViewById(R.id.streetlightCountTextView);
+        overallsafetyProgressBar = findViewById(R.id.overallsafetyProgressBar);
+        overallsafetyTextView = findViewById(R.id.overallsafetyCountTextView);
 
 
         // Set bottom sheet callback
@@ -122,9 +138,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
                 if (newState == BottomSheetBehavior.STATE_EXPANDED) {
-                    moveMapUp();
+                    moveBottomSheetMapUp();
                 } else if (newState == BottomSheetBehavior.STATE_HIDDEN || newState == BottomSheetBehavior.STATE_COLLAPSED) {
-                    moveMapDown();
+                    moveBottomSheetMapDown();
                 }
             }
 
@@ -135,13 +151,21 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
+
+
     private void moveMapUp() {
+        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) mapCardView.getLayoutParams();
+        params.setMargins(0, 150, 0, 0); // Adjust the top margin as needed
+        mapCardView.setLayoutParams(params);
+    }
+
+    private void moveBottomSheetMapUp() {
         CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) findViewById(R.id.mapCardView).getLayoutParams();
         params.bottomMargin = bottomSheet.getHeight();
         findViewById(R.id.mapCardView).setLayoutParams(params);
     }
 
-    private void moveMapDown() {
+    private void moveBottomSheetMapDown() {
         CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) findViewById(R.id.mapCardView).getLayoutParams();
         params.bottomMargin = 0;
         findViewById(R.id.mapCardView).setLayoutParams(params);
@@ -166,6 +190,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 pathDirections.setDestination(userDestination, place.getName().toString()); // Pass destination name and coordinates
                 pathDirections.execute(lastKnownLocation); // Execute task with current location
                 requestDirections(lastKnownLocation, userDestination, place.getName().toString()); // Call requestDirections with current location and selected destination
+                moveMapUp();
             }
 
             @Override
@@ -196,8 +221,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         crimeData = new CrimeData(this, gMap);
         policeStationData = new PoliceStationData(this, gMap);
 
-
         gMap.setOnPolylineClickListener(this); // Add the OnPolylineClickListener to the GoogleMap instance
+
     }
 
     // Show obtained Route
@@ -207,45 +232,38 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             this.polylinePoints = route; // Store the polyline points for later use
             gMap.setOnPolylineClickListener(this); // Set polyline click listener
 
-            cctvData.fetchCCTVData(route, new CCTVData.CCTVDataCallback() {
-                @Override
-                public void onCCTVDataReceived(int count) {
-                    updateBottomSheetCCTVCount(count);
-                }
-            });
 
-            // Fetch crime data along the route
-            crimeData.fetchCrimeData(route, new CrimeData.CrimeDataCallback() {
-                @Override
-                public void onCrimeDataReceived(int count) {
-                    updateBottomSheetCrimeCount(count);
 
-                    // Update progress bar color based on crime count
-                    if (count < 10) {
-                        crimeProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.colorGreen)));
-                    } else if (count < 20) {
-                        crimeProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.colorYellow)));
-                    } else {
-                        crimeProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.colorRed)));
-                    }
-                }
-            });
-
-            // Pass a callback function to fetchPoliceStationData method
-            policeStationData.fetchPoliceStationData(route, new PoliceStationData.PoliceStationDataCallback() {
-                @Override
-                public void onPoliceStationDataReceived(int count) {
-                    updateBottomSheetPoliceStationCount(count);
-                }
-            });
-
-            // Pass a callback function to fetchStreetlightData method
-            streetlightData.fetchStreetlightData(route, new StreetlightData.StreetlightDataCallback() {
-                @Override
-                public void onStreetlightDataReceived(int count) {
-                    updateBottomSheetStreetlightCount(count);
-                }
-            });
+//            cctvData.fetchCCTVData(route, new CCTVData.CCTVDataCallback() {
+//                @Override
+//                public void onCCTVDataReceived(int count) {
+//                    updateBottomSheetCCTVCount(count);
+//                }
+//            });
+//
+//            // Fetch crime data along the route
+//            crimeData.fetchCrimeData(route, new CrimeData.CrimeDataCallback() {
+//                @Override
+//                public void onCrimeDataReceived(int count) {
+//                    updateBottomSheetCrimeCount(count);
+//                }
+//            });
+//
+//            // Pass a callback function to fetchPoliceStationData method
+//            policeStationData.fetchPoliceStationData(route, new PoliceStationData.PoliceStationDataCallback() {
+//                @Override
+//                public void onPoliceStationDataReceived(int count) {
+//                    updateBottomSheetPoliceStationCount(count);
+//                }
+//            });
+//
+//            // Pass a callback function to fetchStreetlightData method
+//            streetlightData.fetchStreetlightData(route, new StreetlightData.StreetlightDataCallback() {
+//                @Override
+//                public void onStreetlightDataReceived(int count) {
+//                    updateBottomSheetStreetlightCount(count);
+//                }
+//            });
 
             showBottomSheet(true);
 
@@ -272,38 +290,39 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             Toast.makeText(this, polyline.getTag().toString(), Toast.LENGTH_SHORT).show();
 
 
-            // Pass a callback function to fetchPoliceStationData method
-            cctvData.fetchCCTVData(polyline.getPoints(), new CCTVData.CCTVDataCallback() {
-                @Override
-                public void onCCTVDataReceived(int count) {
-                    updateBottomSheetCCTVCount(count);
-                }
-            });
 
-            // Fetch crime data along the clicked polyline
-            crimeData.fetchCrimeData(polyline.getPoints(), new CrimeData.CrimeDataCallback() {
-                @Override
-                public void onCrimeDataReceived(int count) {
-                    updateBottomSheetCrimeCount(count);
-                }
-            });
-
-
-            // Pass a callback function to fetchPoliceStationData method
-            policeStationData.fetchPoliceStationData(polyline.getPoints(), new PoliceStationData.PoliceStationDataCallback() {
-                @Override
-                public void onPoliceStationDataReceived(int count) {
-                    updateBottomSheetPoliceStationCount(count);
-                }
-            });
-
-            // Fetch streetlight data along the clicked polyline
-            streetlightData.fetchStreetlightData(polyline.getPoints(), new StreetlightData.StreetlightDataCallback() {
-                @Override
-                public void onStreetlightDataReceived(int count) {
-                    // Update bottom sheet with the crime count
-                }
-            });
+//            // Pass a callback function to fetchCCTVData method
+//            cctvData.fetchCCTVData(polyline.getPoints(), new CCTVData.CCTVDataCallback() {
+//                @Override
+//                public void onCCTVDataReceived(int count) {
+//                    updateBottomSheetCCTVCount(count);
+//                }
+//            });
+//
+//            // Fetch crime data along the clicked polyline
+//            crimeData.fetchCrimeData(polyline.getPoints(), new CrimeData.CrimeDataCallback() {
+//                @Override
+//                public void onCrimeDataReceived(int count) {
+//                    updateBottomSheetCrimeCount(count);
+//                }
+//            });
+//
+//
+//            // Pass a callback function to fetchPoliceStationData method
+//            policeStationData.fetchPoliceStationData(polyline.getPoints(), new PoliceStationData.PoliceStationDataCallback() {
+//                @Override
+//                public void onPoliceStationDataReceived(int count) {
+//                    updateBottomSheetPoliceStationCount(count);
+//                }
+//            });
+//
+//            // Fetch streetlight data along the clicked polyline
+//            streetlightData.fetchStreetlightData(polyline.getPoints(), new StreetlightData.StreetlightDataCallback() {
+//                @Override
+//                public void onStreetlightDataReceived(int count) {
+//                    // Update bottom sheet with the crime count
+//                }
+//            });
 
             showBottomSheet(true);
         } else {
@@ -312,29 +331,103 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-    public void updateBottomSheetCCTVCount(int count) {
-        TextView cctvCountTextView = safetyLayout.findViewById(R.id.cctvCountTextView);
+    public void updateBottomSheetOverallCount(int count) {
+        TextView overallsafetyCountTextView = overallsafetyLayout.findViewById(R.id.overallsafetyCountTextView);
         Log.d(TAG, "CCTV Count: " + count); // Log count for debugging
-        cctvCountTextView.setText(String.valueOf(count)); // Convert count to String
+        overallsafetyCountTextView.setText(String.valueOf(count)); // Convert count to String
+
+        // Adjust color based on count
+        if (count < 10) {
+            setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor);
+        } else if (count < 15) {
+            setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor);
+        } else {
+            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor);
+        }
+
+        // Update progress bar value
+        overallsafetyProgressBar.setProgress(count);
     }
 
-    public void updateBottomSheetCrimeCount(int count) {
-        TextView crimeCountTextView = safetyLayout.findViewById(R.id.crimeCountTextView);
-        Log.d(TAG, "Crime Count: " + count); // Log count for debugging
-        crimeCountTextView.setText(String.valueOf(count)); // Convert count to String
+//    public void updateBottomSheetCCTVCount(int count) {
+//        TextView cctvCountTextView = metricsLayout.findViewById(R.id.cctvCountTextView);
+//        Log.d(TAG, "CCTV Count: " + count); // Log count for debugging
+//        cctvCountTextView.setText(String.valueOf(count)); // Convert count to String
+//
+//        // Adjust color based on count
+//        if (count < 10) {
+//            setProgressBarColor(cctvProgressBar, R.color.dangerColor);
+//        } else if (count < 15) {
+//            setProgressBarColor(cctvProgressBar, R.color.mediumColor);
+//        } else {
+//            setProgressBarColor(cctvProgressBar, R.color.safeColor);
+//        }
+//
+//        // Update progress bar value
+//        cctvProgressBar.setProgress(count);
+//    }
+//
+//    public void updateBottomSheetCrimeCount(int count) {
+//        TextView crimeCountTextView = metricsLayout.findViewById(R.id.crimeCountTextView);
+//        Log.d(TAG, "Crime Count: " + count); // Log count for debugging
+//        crimeCountTextView.setText(String.valueOf(count)); // Convert count to String
+//
+//        // Adjust color based on count
+//        if (count < 10) {
+//            setProgressBarColor(crimeProgressBar, R.color.safeColor);
+//        } else if (count < 20) {
+//            setProgressBarColor(crimeProgressBar, R.color.mediumColor);
+//        } else {
+//            setProgressBarColor(crimeProgressBar, R.color.dangerColor);
+//        }
+//
+//        // Update progress bar value
+//        crimeProgressBar.setProgress(count);
+//    }
+//
+//    public void updateBottomSheetPoliceStationCount(int count) {
+//        TextView policeCountTextView = metricsLayout.findViewById(R.id.policeCountTextView);
+//        Log.d(TAG, "Police Station Count: " + count); // Log count for debugging
+//        policeCountTextView.setText(String.valueOf(count)); // Convert count to String
+//
+//        // Adjust color based on count
+//        if (count < 10) {
+//            setProgressBarColor(policeProgressBar, R.color.dangerColor);
+//        } else if (count < 20) {
+//            setProgressBarColor(policeProgressBar, R.color.safeColor);
+//        } else {
+//            setProgressBarColor(policeProgressBar, R.color.dangerColor);
+//        }
+//
+//        // Update progress bar value
+//        policeProgressBar.setProgress(count);
+//    }
+//
+//    public void updateBottomSheetStreetlightCount(int count) {
+//        TextView streetlightCountTextView = metricsLayout.findViewById(R.id.streetlightCountTextView);
+//        Log.d(TAG, "Streetlight Count: " + count); // Log count for debugging
+//        streetlightCountTextView.setText(String.valueOf(count)); // Convert count to String
+//
+//        // Adjust color based on count
+//        if (count < 10) {
+//            setProgressBarColor(streetlightProgressBar, R.color.dangerColor);
+//        } else if (count < 20) {
+//            setProgressBarColor(streetlightProgressBar, R.color.mediumColor);
+//        } else {
+//            setProgressBarColor(streetlightProgressBar, R.color.safeColor);
+//        }
+//
+//        // Update progress bar value
+//        streetlightProgressBar.setProgress(count);
+//    }
+
+
+    // Helper method to set progress bar color dynamically
+    private void setProgressBarColor(ProgressBar progressBar, int colorRes) {
+        int color = ContextCompat.getColor(this, colorRes);
+        progressBar.setProgressTintList(ColorStateList.valueOf(color));
     }
 
-    public void updateBottomSheetPoliceStationCount(int count) {
-        TextView policeCountTextView = safetyLayout.findViewById(R.id.policeCountTextView);
-        Log.d(TAG, "Police Station Count: " + count); // Log count for debugging
-        policeCountTextView.setText(String.valueOf(count)); // Convert count to String
-    }
-
-    public void updateBottomSheetStreetlightCount(int count) {
-        TextView streetlightCountTextView = safetyLayout.findViewById(R.id.streetlightCountTextView);
-        Log.d(TAG, "Streetlight Count: " + count); // Log count for debugging
-        streetlightCountTextView.setText(String.valueOf(count)); // Convert count to String
-    }
 
 
     // Helper method to expand BottomSheet
@@ -352,12 +445,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             expandBottomSheet();
 
             // Check if templateLayout is not already added
-            if (safetyLayout.getParent() == null) {
-                bottomSheetLayout.addView(safetyLayout); // Add the template layout to the bottom sheet layout
+            if (overallsafetyLayout.getParent() == null) {
+                bottomSheetLayout.addView(overallsafetyLayout); // Add the template layout to the bottom sheet layout
             }
         } else {
             bottomSheet.setVisibility(View.GONE);
-            bottomSheetLayout.removeView(safetyLayout); // Remove the template layout if it exists
+            bottomSheetLayout.removeView(overallsafetyLayout); // Remove the template layout if it exists
         }
     }
 

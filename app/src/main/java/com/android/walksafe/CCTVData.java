@@ -1,8 +1,12 @@
 package com.android.walksafe;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.location.Location;
 import android.util.Log;
+import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
 
@@ -20,6 +24,7 @@ public class CCTVData {
     private GoogleMap gMap;
     private Context context;
     private static final float CCTV_RADIUS_METERS = 30;
+    private ProgressBar cctvProgressBar;
 
     public CCTVData(Context context, GoogleMap gMap) {
         this.gMap = gMap;
@@ -117,6 +122,7 @@ public class CCTVData {
     public interface CCTVDataCallback {
         void onCCTVDataReceived(int count);
     }
+
 
     // Method to check if a CCTV is near the route
     private boolean isNearRoute(LatLng location, List<LatLng> route) {
