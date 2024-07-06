@@ -4,7 +4,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F7F7F7"
+    android:background="@color/light300"
     tools:context=".MapActivity" >
 
     <!-- Autocomplete Fragment CardView -->
@@ -67,18 +67,18 @@
             android:scaleType="centerCrop"
             android:layout_marginTop="10dp"/>
 
-        <!-- LinearLayout for Safety Metrics-->
+        <!-- LinearLayout for Overall Safety-->
         <LinearLayout
             android:id="@+id/metricsLinearLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:layout_marginTop="1dp"
-            android:layout_marginStart="30dp"
-            android:layout_marginEnd="30dp">
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp">
 
-            <!-- Include Template Layout for Crime Category -->
-            <include layout="@layout/metrics_layout" />
+            <!-- Include Template Layout for Overall Safety -->
+            <include layout="@layout/overallsafety_layout" />
         </LinearLayout>
 
         <!-- LinearLayout for Polyline Info -->
@@ -87,8 +87,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginStart="30dp"
-            android:layout_marginEnd="30dp">
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp">
         </LinearLayout>
 
     </LinearLayout>
