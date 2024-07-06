@@ -1,23 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/metrics_Layout"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:paddingVertical="8dp">
+    android:layout_height="match_parent"
+    android:id="@+id/metrics_Layout"
+    android:background="#F9F9F9">
 
-    <!-- Crimes -->
+    <!-- Back Button -->
+    <ImageButton
+        android:id="@+id/backButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/back_arrow"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:padding="24dp" />
+
+    <!-- Map Image -->
+    <ImageView
+        android:id="@+id/mapImageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="centerCrop"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintWidth_percent="1.0"
+        app:layout_constraintDimensionRatio="16:9"/>
+
+
+    <!-- Large Circular Progress Bar Frame -->
+    <FrameLayout
+        android:id="@+id/largeCircleFrame"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="-60dp"
+        app:layout_constraintTop_toBottomOf="@id/mapImageView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_gravity="center">
+
+        <!-- Circular Progress Bar -->
+        <ProgressBar
+            android:id="@+id/largeProgressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:indeterminate="false"
+            android:max="100"
+            android:progressDrawable="@drawable/circular_progress_bar" />
+    </FrameLayout>
+
+    <!-- Dynamic Title -->
+    <TextView
+        android:id="@+id/dynamicTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/largeCircleFrame"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:fontFamily="@font/neuehaasdisplaybold"
+        android:textColor="#1C1311"
+        android:text="Route 1"
+        android:textSize="24sp" />
+
+    <!-- Crime -->
     <LinearLayout
+        android:id="@+id/crimeSection"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:orientation="horizontal"
+        android:paddingVertical="8dp"
+        android:gravity="center_vertical"
+        android:paddingRight="24dp"
+        android:paddingLeft="24dp"
+        app:layout_constraintTop_toBottomOf="@id/dynamicTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/darkcrime_icon" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="15dp"
+            android:layout_marginEnd="15dp">
+
+            <TextView
+                android:id="@+id/crimeTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/dark500"
+                android:text="Crimes"
+                android:textSize="16sp"
+                android:fontFamily="@font/neuehaasdisplaybold"/>
+
+            <TextView
+                android:id="@+id/crimeDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/subText"
+                android:text="This takes into account historical crime data to understand the general safety of the route. It helps us recommend paths that are statistically less likely to have incidents."
+                android:justificationMode="inter_word"
+                android:textSize="12sp"
+                android:fontFamily="@font/neuehaasdisplayroman" />
+
+        </LinearLayout>
 
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center">
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="8dp">
 
             <!-- Circular Progress Bar -->
             <ProgressBar
@@ -27,45 +127,74 @@
                 android:layout_height="60dp"
                 android:indeterminate="false"
                 android:max="100"
-                android:progressDrawable="@drawable/circular_progress_bar"/>
+                android:progressDrawable="@drawable/circular_progress_bar" />
 
             <!-- Crime Count Text -->
             <TextView
                 android:id="@+id/crimeCountTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="#000000"
+                android:textSize="14sp"
+                android:textColor="@color/dark500"
                 android:gravity="center"
-                android:layout_gravity="center"/>
+                android:layout_gravity="center" />
 
         </FrameLayout>
-
-        <TextView
-            android:id="@+id/crimeTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:textColor="#1C1311"
-            android:text="Crimes"
-            android:textSize="10sp"
-            android:layout_gravity="center"
-            android:fontFamily="@font/neuehaasdisplayroman"/>
 
     </LinearLayout>
 
     <!-- CCTV -->
     <LinearLayout
+        android:id="@+id/cctvSection"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:orientation="horizontal"
+        android:paddingVertical="8dp"
+        android:gravity="center_vertical"
+        android:paddingRight="24dp"
+        android:paddingLeft="24dp"
+        app:layout_constraintTop_toBottomOf="@id/crimeSection"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/darkcctv_icon"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="15dp"
+            android:layout_marginEnd="15dp">
+
+            <TextView
+                android:id="@+id/cctvTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/dark500"
+                android:text="CCTV"
+                android:textSize="16sp"
+                android:fontFamily="@font/neuehaasdisplaybold"/>
+
+            <TextView
+                android:id="@+id/cctvDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/subText"
+                android:text="Having CCTV cameras along the route is factored into the safety score. They can discourage crime and may provide additional assistance if needed."
+                android:textSize="12sp"
+                android:fontFamily="@font/neuehaasdisplayroman"
+                android:justificationMode="inter_word"/>
+
+        </LinearLayout>
 
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center">
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="8dp">
 
             <!-- Circular Progress Bar -->
             <ProgressBar
@@ -75,45 +204,74 @@
                 android:layout_height="60dp"
                 android:indeterminate="false"
                 android:max="100"
-                android:progressDrawable="@drawable/circular_progress_bar"/>
+                android:progressDrawable="@drawable/circular_progress_bar" />
 
             <!-- CCTV Count Text -->
             <TextView
                 android:id="@+id/cctvCountTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="#000000"
+                android:textSize="14sp"
+                android:textColor="@color/dark500"
                 android:gravity="center"
-                android:layout_gravity="center"/>
+                android:layout_gravity="center" />
 
         </FrameLayout>
-
-        <TextView
-            android:id="@+id/cctvTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:textColor="#1C1311"
-            android:text="CCTV"
-            android:textSize="10sp"
-            android:layout_gravity="center"
-            android:fontFamily="@font/neuehaasdisplayroman"/>
 
     </LinearLayout>
 
     <!-- Streetlights -->
     <LinearLayout
+        android:id="@+id/streetlightSection"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:orientation="horizontal"
+        android:paddingVertical="8dp"
+        android:gravity="center_vertical"
+        android:paddingRight="24dp"
+        android:paddingLeft="24dp"
+        app:layout_constraintTop_toBottomOf="@id/cctvSection"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/darkstreetlight_icon"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="15dp"
+            android:layout_marginEnd="15dp">
+
+            <TextView
+                android:id="@+id/streetlightTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/dark500"
+                android:text="Streetlights"
+                android:textSize="16sp"
+                android:fontFamily="@font/neuehaasdisplaybold"/>
+
+            <TextView
+                android:id="@+id/streetlightDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/subText"
+                android:text="We consider the availability of streetlights along the route. Well-lit paths can deter crime and improve visibility, making you feel safer during your journey."
+                android:justificationMode="inter_word"
+                android:textSize="12sp"
+                android:fontFamily="@font/neuehaasdisplayroman" />
+
+        </LinearLayout>
 
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center">
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="8dp">
 
             <!-- Circular Progress Bar -->
             <ProgressBar
@@ -123,45 +281,74 @@
                 android:layout_height="60dp"
                 android:indeterminate="false"
                 android:max="100"
-                android:progressDrawable="@drawable/circular_progress_bar"/>
+                android:progressDrawable="@drawable/circular_progress_bar" />
 
-            <!-- Streetlights Count Text -->
+            <!-- Streetlight Count Text -->
             <TextView
                 android:id="@+id/streetlightCountTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="#000000"
+                android:textSize="14sp"
+                android:textColor="@color/dark500"
                 android:gravity="center"
-                android:layout_gravity="center"/>
+                android:layout_gravity="center" />
 
         </FrameLayout>
-
-        <TextView
-            android:id="@+id/streetlightTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:textColor="#1C1311"
-            android:text="Streetlights"
-            android:textSize="10sp"
-            android:layout_gravity="center"
-            android:fontFamily="@font/neuehaasdisplayroman"/>
 
     </LinearLayout>
 
     <!-- Police Station -->
     <LinearLayout
+        android:id="@+id/policeSection"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:orientation="horizontal"
+        android:paddingVertical="8dp"
+        android:gravity="center_vertical"
+        android:paddingRight="24dp"
+        android:paddingLeft="24dp"
+        app:layout_constraintTop_toBottomOf="@id/streetlightSection"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/darkpolice_icon"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="15dp"
+            android:layout_marginEnd="15dp">
+
+            <TextView
+                android:id="@+id/policeTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/dark500"
+                android:text="Police Station"
+                android:textSize="16sp"
+                android:fontFamily="@font/neuehaasdisplaybold"/>
+
+            <TextView
+                android:id="@+id/policeDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/neuehaasdisplayroman"
+                android:text="Knowing there are police stations nearby contributes to the overall safety score. This can provide a sense of security during your trip."
+                android:justificationMode="inter_word"
+                android:textColor="@color/subText"
+                android:textSize="12sp" />
+
+        </LinearLayout>
 
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center">
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="8dp">
 
             <!-- Circular Progress Bar -->
             <ProgressBar
@@ -171,31 +358,58 @@
                 android:layout_height="60dp"
                 android:indeterminate="false"
                 android:max="100"
-                android:progressDrawable="@drawable/circular_progress_bar"/>
+                android:progressDrawable="@drawable/circular_progress_bar" />
 
-            <!-- Police Count Text -->
+            <!-- Category 4 Count Text -->
             <TextView
                 android:id="@+id/policeCountTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="#000000"
+                android:textSize="14sp"
+                android:textColor="@color/dark500"
                 android:gravity="center"
-                android:layout_gravity="center"/>
+                android:layout_gravity="center" />
 
         </FrameLayout>
 
-        <TextView
-            android:id="@+id/policeTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:textColor="#1C1311"
-            android:text="Police Station"
-            android:textSize="10sp"
-            android:layout_gravity="center"
-            android:fontFamily="@font/neuehaasdisplayroman"/>
-
     </LinearLayout>
 
-</LinearLayout>
+    <!-- Share Your Experience Button -->
+    <RelativeLayout
+        android:id="@+id/shareExperienceButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:background="@drawable/button_bg"
+        app:layout_constraintTop_toBottomOf="@id/policeSection"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/shareIcon"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/lightshare_icon"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true" />
+
+        <TextView
+            android:id="@+id/shareExperienceText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/light300"
+            android:text="Share Your Experience"
+            android:textSize="16sp"
+            android:paddingStart="8dp"
+            android:layout_toEndOf="@id/shareIcon"
+            android:layout_centerVertical="true"
+            android:fontFamily="@font/neuehaasdisplaybold" />
+    </RelativeLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

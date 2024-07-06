@@ -1,6 +1,12 @@
 <!-- res/values/colors.xml -->
 <resources>
-    <color name="safeColor">#4CAF50</color> <!-- Green color for safe condition -->
-    <color name="mediumColor">#FFC107</color> <!-- Yellow color for moderate condition -->
-    <color name="dangerColor">#F44336</color> <!-- Red color for dangerous condition -->
+    <color name="colorProgress">#3B5998</color>
+    <color name="safeColor">#6CA867</color> <!-- Green color for safe condition -->
+    <color name="mediumColor">#EDCD57</color> <!-- Yellow color for moderate condition -->
+    <color name="dangerColor">#E2635E</color> <!-- Red color for dangerous condition -->
+    <color name="ucGreen400">#345B33</color>
+    <color name="ucGreen200">#8AA18A</color>
+    <color name="dark500">#1C1311</color>
+    <color name="light300">#F9F9F9</color>
+    <color name="subText">#676160</color>
 </resources>
