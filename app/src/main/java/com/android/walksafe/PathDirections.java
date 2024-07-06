@@ -33,6 +33,7 @@ import java.util.Scanner;
 public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>> {
 
     private MapActivity mapActivity;
+    private MetricsActivity metricsActivity;
     private GoogleMap gMap;
     private Context context;
     private LatLng destination;
@@ -41,17 +42,19 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
     private List<Polyline> polylines = new ArrayList<>(); // List to store all polylines
     private Polyline primaryPolyline; // Store reference to the primary polyline
     private List<List<LatLng>> decodedPolylines;
-    private CrimeData crimeData;
-    private CCTVData cctvData;
-    private PoliceStationData policeStationData;
-    private StreetlightData streetlightData;
+    private final CrimeData crimeData;
+    private final CCTVData cctvData;
+    private final PoliceStationData policeStationData;
+    private final StreetlightData streetlightData;
     private SafetyIndex safetyIndex;
 
 
 
-    public PathDirections (MapActivity mapActivity, CCTVData cctvData, CrimeData crimeData, PoliceStationData policeStationData, StreetlightData streetlightData) {
+    public PathDirections (MapActivity mapActivity, MetricsActivity metricsActivity,CCTVData cctvData, CrimeData crimeData, PoliceStationData policeStationData, StreetlightData streetlightData) {
         this.mapActivity = mapActivity;
         this.context = mapActivity.getApplicationContext();
+
+        this.metricsActivity = metricsActivity;
 
         this.cctvData = cctvData;
         this.crimeData = crimeData;
@@ -205,37 +208,37 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
                     }
                     zoomToPolyline(clickedPolyline); // Zoom to clicked polyline
 
-//                    // Fetch crime data when a new polyline is clicked
-//                    crimeData.fetchCrimeData(clickedPolyline.getPoints(), new CrimeData.CrimeDataCallback() {
-//                        @Override
-//                        public void onCrimeDataReceived(int count) {
-//                            mapActivity.updateBottomSheetCrimeCount(count);
-//                        }
-//                    });
-//
-//                    // Fetch cctv data when a new polyline is clicked
-//                    cctvData.fetchCCTVData(clickedPolyline.getPoints(), new CCTVData.CCTVDataCallback(){
-//                        @Override
-//                        public void onCCTVDataReceived(int count) {
-//                            mapActivity.updateBottomSheetCCTVCount(count);
-//                        }
-//                    });
-//
-//                    // Fetch police station data when a new polyline is clicked
-//                    policeStationData.fetchPoliceStationData(clickedPolyline.getPoints(), new PoliceStationData.PoliceStationDataCallback(){
-//                        @Override
-//                        public void onPoliceStationDataReceived(int count) {
-//                            mapActivity.updateBottomSheetPoliceStationCount(count);
-//                        }
-//                    });
-//
-//                    // Fetch streetlight data when a new polyline is clicked
-//                    streetlightData.fetchStreetlightData(clickedPolyline.getPoints(), new StreetlightData.StreetlightDataCallback() {
-//                        @Override
-//                        public void onStreetlightDataReceived(int count) {
-//                            mapActivity.updateBottomSheetStreetlightCount(count);
-//                        }
-//                    });
+                    /// Fetch crime data when a new polyline is clicked
+                    crimeData.fetchCrimeData(clickedPolyline.getPoints(), new CrimeData.CrimeDataCallback() {
+                        @Override
+                        public void onCrimeDataReceived(int count) {
+                            metricsActivity.updateCrimeCount(count);
+                        }
+                    });
+
+                    // Fetch CCTV data when a new polyline is clicked
+                    cctvData.fetchCCTVData(clickedPolyline.getPoints(), new CCTVData.CCTVDataCallback() {
+                        @Override
+                        public void onCCTVDataReceived(int count) {
+                            metricsActivity.updateCCTVCount(count);
+                        }
+                    });
+
+                    // Fetch police station data when a new polyline is clicked
+                    policeStationData.fetchPoliceStationData(clickedPolyline.getPoints(), new PoliceStationData.PoliceStationDataCallback() {
+                        @Override
+                        public void onPoliceStationDataReceived(int count) {
+                            metricsActivity.updatePoliceCount(count);
+                        }
+                    });
+
+                    // Fetch streetlight data when a new polyline is clicked
+                    streetlightData.fetchStreetlightData(clickedPolyline.getPoints(), new StreetlightData.StreetlightDataCallback() {
+                        @Override
+                        public void onStreetlightDataReceived(int count) {
+                            metricsActivity.updateStreetlightCount(count);
+                        }
+                    });
                 }
             };
             gMap.setOnPolylineClickListener(polylineClickListener);

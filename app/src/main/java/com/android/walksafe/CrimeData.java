@@ -67,6 +67,7 @@ public class CrimeData {
                             }
                         }
                     }
+                    Log.d("CrimeData", "Crime Count: " + crimeCount);
                     callback.onCrimeDataReceived(crimeCount);
                 })
                 .addOnFailureListener(e -> {

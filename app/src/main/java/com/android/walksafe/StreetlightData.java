@@ -18,31 +18,31 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.List;
 
 public class StreetlightData {
+
+    private GoogleMap gMap;
     private Context context;
-    private DatabaseReference databaseReference;
+    private static DatabaseReference databaseReference;
     private static final float SL_RADIUS_METERS = 30;
 
     public StreetlightData(Context context, GoogleMap gMap) {
         this.context = context;
-        databaseReference = FirebaseDatabase.getInstance().getReference().child("13m6mDT-oDjzdmgSsm3mHVtD__sHwuM5yfO7OC8qsaz4");
+        this.gMap = gMap;
     }
 
     public void fetchStreetlightData(List<LatLng> route, StreetlightDataCallback callback) {
-        databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("13m6mDT-oDjzdmgSsm3mHVtD__sHwuM5yfO7OC8qsaz4");
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 int count = 0;
 
-                // Iterate over each child node (SL_AZCKO, SL_LBK, SL_SGP)
                 for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
                     String childKey = childSnapshot.getKey();
-
                     if (childKey.equals("SL_AZCKO") || childKey.equals("SL_LBK") || childKey.equals("SL_SGP")) {
-                        for (DataSnapshot streetlightSnapshot : childSnapshot.getChildren()) {
+                        for (DataSnapshot stationSnapshot : childSnapshot.getChildren()) {
 
-                            // Iterate over each streetlight entry under the current child node
-                            Object latitudeObj = streetlightSnapshot.child("latitude").getValue();
-                            Object longitudeObj = streetlightSnapshot.child("longitude").getValue();
+                            Object latitudeObj = stationSnapshot.child("latitude").getValue();
+                            Object longitudeObj = stationSnapshot.child("longitude").getValue();
 
                             if (latitudeObj instanceof Double && longitudeObj instanceof Double) {
                                 double latitude = (double) latitudeObj;
@@ -72,6 +72,7 @@ public class StreetlightData {
             }
         });
     }
+
 
     public interface StreetlightDataCallback {
         void onStreetlightDataReceived(int count);
