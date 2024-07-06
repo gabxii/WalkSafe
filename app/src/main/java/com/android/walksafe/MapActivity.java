@@ -1,6 +1,7 @@
 package com.android.walksafe;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -8,6 +9,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -36,6 +38,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -59,6 +62,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private List<LatLng> route;
     private List<Polyline> polylines = new ArrayList<>();
     private List<LatLng> polylinePoints; // Define polylinePoints here
+    private PlacesClient placesClient;
+
+    private MetricsActivity metricsActivity;
 
     private CrimeData crimeData;
     private CCTVData cctvData;
@@ -67,7 +73,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private SafetyIndex safetyIndex;
 
     private View bottomSheet;
-    private LinearLayout metricsLayout;
+
     private LinearLayout overallsafetyLayout;
     private LinearLayout bottomSheetLayout;
     private BottomSheetBehavior bottomSheetBehavior;
@@ -83,6 +89,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private ProgressBar overallsafetyProgressBar;
     private TextView overallsafetyTextView;
 
+    private ProgressBar progressBar;
+    private ImageView arrowIndicator;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,6 +105,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
+
+        // Initialize PlacesClient
+        if (!Places.isInitialized()) {
+            Places.initialize(getApplicationContext(), getString(R.string.api_key));
+        }
+        placesClient = Places.createClient(this);
 
         mapCardView = findViewById(R.id.mapCardView);
 
@@ -114,7 +129,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         // Find views
         bottomSheet = findViewById(R.id.bottomSheetLinearLayout);
         bottomSheetLayout = findViewById(R.id.metricsLinearLayout);
-        metricsLayout = findViewById(R.id.metrics_Layout);
+
         overallsafetyLayout = findViewById(R.id.overallsafety_Layout);
 
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
@@ -131,6 +146,32 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         streetlightTextView = findViewById(R.id.streetlightCountTextView);
         overallsafetyProgressBar = findViewById(R.id.overallsafetyProgressBar);
         overallsafetyTextView = findViewById(R.id.overallsafetyCountTextView);
+
+
+
+        ArrayList<LatLng> polylinePoints = new ArrayList<>();
+
+        // Set click listeners
+        findViewById(R.id.progressBarButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MapActivity.this, MetricsActivity.class);
+                intent.putParcelableArrayListExtra("polylinePoints", polylinePoints);
+                startActivity(intent);
+                Toast.makeText(MapActivity.this, "Circular progress bar clicked", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        findViewById(R.id.arrow).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MapActivity.this, MetricsActivity.class);
+                intent.putParcelableArrayListExtra("polylinePoints", polylinePoints);
+                startActivity(intent);
+                Toast.makeText(MapActivity.this, "Arrow indicator clicked", Toast.LENGTH_SHORT).show();
+            }
+        });
+
 
 
         // Set bottom sheet callback
@@ -152,18 +193,21 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-
-    private void moveMapUp() {
-        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) mapCardView.getLayoutParams();
-        params.setMargins(0, 150, 0, 0); // Adjust the top margin as needed
-        mapCardView.setLayoutParams(params);
-    }
-
     private void moveBottomSheetMapUp() {
-        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) findViewById(R.id.mapCardView).getLayoutParams();
-        params.bottomMargin = bottomSheet.getHeight();
-        findViewById(R.id.mapCardView).setLayoutParams(params);
+        if (bottomSheet.getHeight() > 0) {
+            CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) mapCardView.getLayoutParams();
+            params.bottomMargin = bottomSheet.getHeight();
+            mapCardView.setLayoutParams(params);
+        } else {
+            bottomSheet.post(new Runnable() {
+                @Override
+                public void run() {
+                    moveBottomSheetMapUp(); // Retry after bottomSheet has been laid out
+                }
+            });
+        }
     }
+
 
     private void moveBottomSheetMapDown() {
         CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) findViewById(R.id.mapCardView).getLayoutParams();
@@ -185,12 +229,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             public void onPlaceSelected(Place place) {
                 LatLng userDestination = place.getLatLng();
                 clearMap(); // Clear previous markers and polylines
-                PathDirections pathDirections = new PathDirections(MapActivity.this, cctvData, crimeData, policeStationData, streetlightData); // Create an instance of DirectionsTask
+                PathDirections pathDirections = new PathDirections(MapActivity.this, metricsActivity, cctvData, crimeData, policeStationData, streetlightData); // Create an instance of DirectionsTask
                 pathDirections.setGoogleMap(gMap);  // Set GoogleMap instance
                 pathDirections.setDestination(userDestination, place.getName().toString()); // Pass destination name and coordinates
                 pathDirections.execute(lastKnownLocation); // Execute task with current location
                 requestDirections(lastKnownLocation, userDestination, place.getName().toString()); // Call requestDirections with current location and selected destination
-                moveMapUp();
+                moveBottomSheetMapUp();
             }
 
             @Override
@@ -201,8 +245,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
+
     private void requestDirections(Location origin, LatLng destination, String destinationName) {
-        PathDirections pathDirections = new PathDirections(MapActivity.this, cctvData, crimeData, policeStationData, streetlightData);
+        PathDirections pathDirections = new PathDirections(MapActivity.this, metricsActivity, cctvData, crimeData, policeStationData, streetlightData);
         pathDirections.setGoogleMap(gMap);
         pathDirections.setDestination(destination, destinationName);
         pathDirections.setRequestAlternativeRoutes(true); // Request alternative routes
@@ -224,6 +269,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         gMap.setOnPolylineClickListener(this); // Add the OnPolylineClickListener to the GoogleMap instance
 
     }
+
+
+
 
     // Show obtained Route
     public void onRouteObtained(List<LatLng> route) {
