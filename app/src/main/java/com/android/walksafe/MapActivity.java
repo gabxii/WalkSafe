@@ -155,23 +155,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         findViewById(R.id.progressBarButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MapActivity.this, MetricsActivity.class);
-                intent.putParcelableArrayListExtra("polylinePoints", polylinePoints);
-                startActivity(intent);
-                Toast.makeText(MapActivity.this, "Circular progress bar clicked", Toast.LENGTH_SHORT).show();
+                navigateToMetricsActivity();
             }
         });
 
         findViewById(R.id.arrow).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MapActivity.this, MetricsActivity.class);
-                intent.putParcelableArrayListExtra("polylinePoints", polylinePoints);
-                startActivity(intent);
-                Toast.makeText(MapActivity.this, "Arrow indicator clicked", Toast.LENGTH_SHORT).show();
+                navigateToMetricsActivity();
             }
         });
-
 
 
         // Set bottom sheet callback
@@ -192,6 +185,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
+
+    private void navigateToMetricsActivity() {
+        Intent intent = new Intent(MapActivity.this, MetricsActivity.class);
+        intent.putParcelableArrayListExtra("polylinePoints", (ArrayList<LatLng>) polylinePoints);
+        startActivity(intent);
+        Toast.makeText(MapActivity.this, "Navigating to MetricsActivity", Toast.LENGTH_SHORT).show();
+    }
 
     private void moveBottomSheetMapUp() {
         if (bottomSheet.getHeight() > 0) {
