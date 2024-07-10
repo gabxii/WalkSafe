@@ -197,53 +197,66 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
             GoogleMap.OnPolylineClickListener polylineClickListener = new GoogleMap.OnPolylineClickListener() {
                 @Override
                 public void onPolylineClick(Polyline clickedPolyline) {
-                    for (Polyline line : polylines) {
-                        if (line.equals(clickedPolyline)) {
-                            line.setColor(Color.parseColor("#1A73E8")); // Set clicked polyline color to blue
-                            line.setZIndex(1); // Set higher z-index for the clicked polyline
+                    try {
+                        for (Polyline line : polylines) {
+                            if (line.equals(clickedPolyline)) {
+                                line.setColor(Color.parseColor("#1A73E8"));
+                                line.setZIndex(1);
+                            } else {
+                                line.setColor(Color.parseColor("#7A7878"));
+                                line.setZIndex(0);
+                            }
+                        }
+                        zoomToPolyline(clickedPolyline);
+
+                        if (metricsActivity == null) {
+                            Log.d(TAG, "Fetching crime data for clicked polyline...");
+                            crimeData.fetchCrimeData(clickedPolyline.getPoints(), new CrimeData.CrimeDataCallback() {
+                                @Override
+                                public void onCrimeDataReceived(int count) {
+                                    Log.d(TAG, "Crime data received: " + count);
+                                    metricsActivity.updateCrimeCount(count);
+                                }
+                            });
+
+                            Log.d(TAG, "Fetching CCTV data for clicked polyline...");
+                            cctvData.fetchCCTVData(clickedPolyline.getPoints(), new CCTVData.CCTVDataCallback() {
+                                @Override
+                                public void onCCTVDataReceived(int count) {
+                                    Log.d(TAG, "CCTV data received: " + count);
+                                    metricsActivity.updateCCTVCount(count);
+                                }
+                            });
+
+                            Log.d(TAG, "Fetching police station data for clicked polyline...");
+                            policeStationData.fetchPoliceStationData(clickedPolyline.getPoints(), new PoliceStationData.PoliceStationDataCallback() {
+                                @Override
+                                public void onPoliceStationDataReceived(int count) {
+                                    Log.d(TAG, "Police station data received: " + count);
+                                    metricsActivity.updatePoliceCount(count);
+                                }
+                            });
+
+                            Log.d(TAG, "Fetching streetlight data for clicked polyline...");
+                            streetlightData.fetchStreetlightData(clickedPolyline.getPoints(), new StreetlightData.StreetlightDataCallback() {
+                                @Override
+                                public void onStreetlightDataReceived(int count) {
+                                    Log.d(TAG, "Streetlight data received: " + count);
+                                    metricsActivity.updateStreetlightCount(count);
+                                }
+                            });
                         } else {
-                            line.setColor(Color.parseColor("#7A7878")); // Set other polylines color to grey
-                            line.setZIndex(0); // Set lower z-index for other polylines
+                            Log.e(TAG, "MetricsActivity is null.");
                         }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error handling polyline click: ", e);
                     }
-                    zoomToPolyline(clickedPolyline); // Zoom to clicked polyline
-
-                    /// Fetch crime data when a new polyline is clicked
-                    crimeData.fetchCrimeData(clickedPolyline.getPoints(), new CrimeData.CrimeDataCallback() {
-                        @Override
-                        public void onCrimeDataReceived(int count) {
-                            metricsActivity.updateCrimeCount(count);
-                        }
-                    });
-
-                    // Fetch CCTV data when a new polyline is clicked
-                    cctvData.fetchCCTVData(clickedPolyline.getPoints(), new CCTVData.CCTVDataCallback() {
-                        @Override
-                        public void onCCTVDataReceived(int count) {
-                            metricsActivity.updateCCTVCount(count);
-                        }
-                    });
-
-                    // Fetch police station data when a new polyline is clicked
-                    policeStationData.fetchPoliceStationData(clickedPolyline.getPoints(), new PoliceStationData.PoliceStationDataCallback() {
-                        @Override
-                        public void onPoliceStationDataReceived(int count) {
-                            metricsActivity.updatePoliceCount(count);
-                        }
-                    });
-
-                    // Fetch streetlight data when a new polyline is clicked
-                    streetlightData.fetchStreetlightData(clickedPolyline.getPoints(), new StreetlightData.StreetlightDataCallback() {
-                        @Override
-                        public void onStreetlightDataReceived(int count) {
-                            metricsActivity.updateStreetlightCount(count);
-                        }
-                    });
                 }
             };
             gMap.setOnPolylineClickListener(polylineClickListener);
         }
     }
+
 
 
 

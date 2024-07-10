@@ -105,7 +105,7 @@ public class CCTVData {
                         }
                     }
                 }
-
+                Log.d("CCTVData", "CCTV Count: " + count);
                 // Pass the total count of CCTV cameras to the callback
                 callback.onCCTVDataReceived(count);
             }

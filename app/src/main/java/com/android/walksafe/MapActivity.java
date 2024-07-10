@@ -92,6 +92,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private ProgressBar progressBar;
     private ImageView arrowIndicator;
 
+    // Declare count variables
+    private int crimeCount = 0;
+    private int cctvCount = 0;
+    private int policeCount = 0;
+    private int streetlightCount = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,21 +154,32 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         overallsafetyTextView = findViewById(R.id.overallsafetyCountTextView);
 
 
-
         ArrayList<LatLng> polylinePoints = new ArrayList<>();
 
         // Set click listeners
         findViewById(R.id.progressBarButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                navigateToMetricsActivity();
+                if (route != null && !route.isEmpty()) {
+                    navigateToMetrics();
+                    // Optionally navigate to MetricsActivity if needed
+                    // navigateToMetrics();
+                } else {
+                    Toast.makeText(MapActivity.this, "No route available", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
         findViewById(R.id.arrow).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                navigateToMetricsActivity();
+                if (route != null && !route.isEmpty()) {
+                    navigateToMetrics();
+                    // Optionally navigate to MetricsActivity if needed
+                    // navigateToMetrics();
+                } else {
+                    Toast.makeText(MapActivity.this, "No route available", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -186,12 +203,24 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-    private void navigateToMetricsActivity() {
+    private void navigateToMetrics() {
         Intent intent = new Intent(MapActivity.this, MetricsActivity.class);
-        intent.putParcelableArrayListExtra("polylinePoints", (ArrayList<LatLng>) polylinePoints);
+        intent.putExtra("crimeCount", crimeCount); // Replace with your actual data
+        intent.putExtra("cctvCount", cctvCount);
+        intent.putExtra("policeCount", policeCount);
+        intent.putExtra("streetlightCount", streetlightCount);
         startActivity(intent);
-        Toast.makeText(MapActivity.this, "Navigating to MetricsActivity", Toast.LENGTH_SHORT).show();
+
+
+        // Example: Passing route data as an extra
+        if (route != null && !route.isEmpty()) {
+            intent.putParcelableArrayListExtra("route", (ArrayList<LatLng>) route);
+        }
+
+        startActivity(intent);
     }
+
+
 
     private void moveBottomSheetMapUp() {
         if (bottomSheet.getHeight() > 0) {
@@ -272,7 +301,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
 
-
     // Show obtained Route
     public void onRouteObtained(List<LatLng> route) {
         if (gMap != null && !route.isEmpty()) {
@@ -280,41 +308,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             this.polylinePoints = route; // Store the polyline points for later use
             gMap.setOnPolylineClickListener(this); // Set polyline click listener
 
+            // Proceed with fetching data
+            fetchCrimeData(route);
+            fetchStreetlightData(route);
+            fetchPoliceData(route);
+            fetchCCTVData(route);
 
-
-//            cctvData.fetchCCTVData(route, new CCTVData.CCTVDataCallback() {
-//                @Override
-//                public void onCCTVDataReceived(int count) {
-//                    updateBottomSheetCCTVCount(count);
-//                }
-//            });
-//
-//            // Fetch crime data along the route
-//            crimeData.fetchCrimeData(route, new CrimeData.CrimeDataCallback() {
-//                @Override
-//                public void onCrimeDataReceived(int count) {
-//                    updateBottomSheetCrimeCount(count);
-//                }
-//            });
-//
-//            // Pass a callback function to fetchPoliceStationData method
-//            policeStationData.fetchPoliceStationData(route, new PoliceStationData.PoliceStationDataCallback() {
-//                @Override
-//                public void onPoliceStationDataReceived(int count) {
-//                    updateBottomSheetPoliceStationCount(count);
-//                }
-//            });
-//
-//            // Pass a callback function to fetchStreetlightData method
-//            streetlightData.fetchStreetlightData(route, new StreetlightData.StreetlightDataCallback() {
-//                @Override
-//                public void onStreetlightDataReceived(int count) {
-//                    updateBottomSheetStreetlightCount(count);
-//                }
-//            });
 
             showBottomSheet(true);
-
         } else {
             // Handle case where route is null or empty
             Log.e(TAG, "Route is null or empty");
@@ -323,54 +324,22 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-
     @Override
     public void onPolylineClick(Polyline polyline) {
-        // Reset the color of all polylines
-        if (pathDirections != null) {
-            pathDirections.resetPolylinesColor();
-        }
-
-        // Show the bottom sheet if a polyline is clicked
         if (polyline != null && polyline.getTag() != null) {
             polyline.setColor(Color.parseColor("#1A73E8"));
             zoomToPolyline(polyline);
             Toast.makeText(this, polyline.getTag().toString(), Toast.LENGTH_SHORT).show();
 
+            // Clear previous data and fetch new data for the clicked polyline
+            clearMap(); // Clear previous markers and polylines
+            clearMetrics(); // Clear previous metrics data
 
-
-//            // Pass a callback function to fetchCCTVData method
-//            cctvData.fetchCCTVData(polyline.getPoints(), new CCTVData.CCTVDataCallback() {
-//                @Override
-//                public void onCCTVDataReceived(int count) {
-//                    updateBottomSheetCCTVCount(count);
-//                }
-//            });
-//
-//            // Fetch crime data along the clicked polyline
-//            crimeData.fetchCrimeData(polyline.getPoints(), new CrimeData.CrimeDataCallback() {
-//                @Override
-//                public void onCrimeDataReceived(int count) {
-//                    updateBottomSheetCrimeCount(count);
-//                }
-//            });
-//
-//
-//            // Pass a callback function to fetchPoliceStationData method
-//            policeStationData.fetchPoliceStationData(polyline.getPoints(), new PoliceStationData.PoliceStationDataCallback() {
-//                @Override
-//                public void onPoliceStationDataReceived(int count) {
-//                    updateBottomSheetPoliceStationCount(count);
-//                }
-//            });
-//
-//            // Fetch streetlight data along the clicked polyline
-//            streetlightData.fetchStreetlightData(polyline.getPoints(), new StreetlightData.StreetlightDataCallback() {
-//                @Override
-//                public void onStreetlightDataReceived(int count) {
-//                    // Update bottom sheet with the crime count
-//                }
-//            });
+            // Fetch data for the clicked polyline
+            fetchCrimeData(polyline.getPoints());
+            fetchStreetlightData(polyline.getPoints());
+            fetchPoliceData(polyline.getPoints());
+            fetchCCTVData(polyline.getPoints());
 
             showBottomSheet(true);
         } else {
@@ -378,6 +347,86 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
+    private void fetchCrimeData(List<LatLng> route) {
+        crimeData.fetchCrimeData(route, new CrimeData.CrimeDataCallback() {
+            @Override
+            public void onCrimeDataReceived(int count) {
+                Log.d(TAG, "Crime data received: " + count);
+                crimeCount = count; // Update crimeCount variable
+                updateMetricsActivityCrimeCount(count);
+            }
+        });
+    }
+
+    private void fetchCCTVData(List<LatLng> route) {
+        cctvData.fetchCCTVData(route, new CCTVData.CCTVDataCallback() {
+            @Override
+            public void onCCTVDataReceived(int count) {
+                Log.d(TAG, "CCTV data received: " + count);
+                cctvCount = count; // Update cctvCount variable
+                updateMetricsActivityCCTVCount(count);
+            }
+        });
+    }
+
+    private void fetchPoliceData(List<LatLng> route) {
+        policeStationData.fetchPoliceStationData(route, new PoliceStationData.PoliceStationDataCallback() {
+            @Override
+            public void onPoliceStationDataReceived(int count) {
+                Log.d(TAG, "Police station data received: " + count);
+                policeCount = count; // Update policeCount variable
+                updateMetricsActivityPoliceCount(count);
+            }
+        });
+    }
+
+    private void fetchStreetlightData(List<LatLng> route) {
+        streetlightData.fetchStreetlightData(route, new StreetlightData.StreetlightDataCallback() {
+            @Override
+            public void onStreetlightDataReceived(int count) {
+                Log.d(TAG, "Streetlight data received: " + count);
+                streetlightCount = count; // Update streetlightCount variable
+                updateMetricsActivityStreetlightCount(count);
+            }
+        });
+    }
+
+
+
+    private void updateMetricsActivityCrimeCount(int count) {
+        if (metricsActivity != null) {
+            metricsActivity.updateCrimeCount(count);
+        }
+    }
+
+    private void updateMetricsActivityCCTVCount(int count) {
+        if (metricsActivity != null) {
+            metricsActivity.updateCCTVCount(count);
+        }
+    }
+
+    private void updateMetricsActivityStreetlightCount(int count) {
+        if (metricsActivity != null) {
+            metricsActivity.updateStreetlightCount(count);
+        }
+    }
+
+    private void updateMetricsActivityPoliceCount(int count) {
+        if (metricsActivity != null) {
+            metricsActivity.updatePoliceCount(count);
+        }
+    }
+
+
+
+    // Helper method to clear previous metrics data
+    private void clearMetrics() {
+        // Clear previous metric counts or update to zero
+        metricsActivity.updateCrimeCount(0);
+        metricsActivity.updateCCTVCount(0);
+        metricsActivity.updatePoliceCount(0);
+        metricsActivity.updateStreetlightCount(0);
+    }
 
     public void updateBottomSheetOverallCount(int count) {
         TextView overallsafetyCountTextView = overallsafetyLayout.findViewById(R.id.overallsafetyCountTextView);

@@ -33,13 +33,12 @@ public class PoliceStationData {
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                int count = 0;
+                int policeCount = 0;
 
                 for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
                     String childKey = childSnapshot.getKey();
                     if (childKey.equals("PS_AZCKO") || childKey.equals("PS_LBK") || childKey.equals("PS_SGP")) {
                         for (DataSnapshot stationSnapshot : childSnapshot.getChildren()) {
-
                             Object latitudeObj = stationSnapshot.child("latitude").getValue();
                             Object longitudeObj = stationSnapshot.child("longitude").getValue();
 
@@ -50,7 +49,7 @@ public class PoliceStationData {
                                 LatLng location = new LatLng(latitude, longitude);
 
                                 if (isNearRoute(location, route)) {
-                                    count++;
+                                    policeCount++;
                                 }
                             } else {
                                 Log.e("PoliceStationData", "Latitude or longitude is not of type Double");
@@ -58,8 +57,8 @@ public class PoliceStationData {
                         }
                     }
                 }
-
-                callback.onPoliceStationDataReceived(count);
+                Log.d("PoliceData", "PoliceCount: " + policeCount);
+                callback.onPoliceStationDataReceived(policeCount);
             }
 
             @Override

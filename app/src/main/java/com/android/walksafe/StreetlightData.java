@@ -34,7 +34,7 @@ public class StreetlightData {
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                int count = 0;
+                int streetlightCount = 0;
 
                 for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
                     String childKey = childSnapshot.getKey();
@@ -52,7 +52,7 @@ public class StreetlightData {
 
                                 // Check if streetlight is near the route
                                 if (isNearRoute(location, route)) {
-                                    count++;
+                                    streetlightCount++;
                                 }
                             } else {
                                 Log.e("StreetlightData", "Latitude or longitude is not of type Double");
@@ -60,9 +60,9 @@ public class StreetlightData {
                         }
                     }
                 }
-
+                Log.d("StreetlightData", "Streetlight Count: " + streetlightCount);
                 // Pass the count of streetlight locations to the callback
-                callback.onStreetlightDataReceived(count);
+                callback.onStreetlightDataReceived(streetlightCount);
             }
 
             @Override
