@@ -214,8 +214,13 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
                             crimeData.fetchCrimeData(clickedPolyline.getPoints(), new CrimeData.CrimeDataCallback() {
                                 @Override
                                 public void onCrimeDataReceived(int count) {
-                                    Log.d(TAG, "Crime data received: " + count);
-                                    metricsActivity.updateCrimeCount(count);
+                                    Log.d(TAG, "CCTV data received: " + count);
+                                    if (metricsActivity != null) {
+                                        metricsActivity.updateCCTVCount(count);
+                                    } else {
+                                        Log.e(TAG, "MetricsActivity is null when updating Crime count");
+                                        // Handle the case where metricsActivity is null, possibly by logging or other means
+                                    }
                                 }
                             });
 
@@ -224,16 +229,26 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
                                 @Override
                                 public void onCCTVDataReceived(int count) {
                                     Log.d(TAG, "CCTV data received: " + count);
-                                    metricsActivity.updateCCTVCount(count);
+                                    if (metricsActivity != null) {
+                                        metricsActivity.updateCCTVCount(count);
+                                    } else {
+                                        Log.e(TAG, "MetricsActivity is null when updating CCTV count");
+                                        // Handle the case where metricsActivity is null, possibly by logging or other means
+                                    }
                                 }
                             });
 
                             Log.d(TAG, "Fetching police station data for clicked polyline...");
                             policeStationData.fetchPoliceStationData(clickedPolyline.getPoints(), new PoliceStationData.PoliceStationDataCallback() {
                                 @Override
-                                public void onPoliceStationDataReceived(int count) {
-                                    Log.d(TAG, "Police station data received: " + count);
-                                    metricsActivity.updatePoliceCount(count);
+                                public void onPoliceStationDataReceived (int count) {
+                                    Log.d(TAG, "CCTV data received: " + count);
+                                    if (metricsActivity != null) {
+                                        metricsActivity.updatePoliceCount(count);
+                                    } else {
+                                        Log.e(TAG, "MetricsActivity is null when updating Police count");
+                                        // Handle the case where metricsActivity is null, possibly by logging or other means
+                                    }
                                 }
                             });
 
@@ -241,8 +256,13 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
                             streetlightData.fetchStreetlightData(clickedPolyline.getPoints(), new StreetlightData.StreetlightDataCallback() {
                                 @Override
                                 public void onStreetlightDataReceived(int count) {
-                                    Log.d(TAG, "Streetlight data received: " + count);
-                                    metricsActivity.updateStreetlightCount(count);
+                                    Log.d(TAG, "CCTV data received: " + count);
+                                    if (metricsActivity != null) {
+                                        metricsActivity.updateStreetlightCount(count);
+                                    } else {
+                                        Log.e(TAG, "MetricsActivity is null when updating Streetlight count");
+                                        // Handle the case where metricsActivity is null, possibly by logging or other means
+                                    }
                                 }
                             });
                         } else {
