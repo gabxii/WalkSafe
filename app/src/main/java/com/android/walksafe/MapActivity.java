@@ -187,21 +187,21 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             Log.e(TAG, "startNavigationButton is null. Check your layout or ID.");
         }
 
-//        // Set click listener for progress bar
-//        progressBarButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                navigateToMetrics();
-//            }
-//        });
-//
-//        // Set click listener for arrow
-//        arrow.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                navigateToMetrics();
-//            }
-//        });
+        // Set click listener for progress bar
+        progressBarButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                navigateToMetrics();
+            }
+        });
+
+        // Set click listener for arrow
+        arrow.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                navigateToMetrics();
+            }
+        });
 
         // Set bottom sheet callback
         bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
