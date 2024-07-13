@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
@@ -47,6 +48,9 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
     private final PoliceStationData policeStationData;
     private final StreetlightData streetlightData;
     private SafetyIndex safetyIndex;
+    private String routeName;
+    private String routeTime;
+    private String routeDistance;
 
 
 
@@ -81,9 +85,9 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
 
 
 
+    // AsyncTask method for fetching route data
     @Override
     protected List<List<LatLng>> doInBackground(Location... locations) {
-        List<List<LatLng>> decodedPolylines = new ArrayList<>();
         if (destination == null) {
             return null;
         }
@@ -91,8 +95,11 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
         Location origin = locations[0];
         LatLng originLatLng = new LatLng(origin.getLatitude(), origin.getLongitude());
 
+        // Initialize decodedPolylines list
+        List<List<LatLng>> decodedPolylines = new ArrayList<>();
+
         try {
-            // Construct URL for the Routes API
+
             String apiKey = context.getString(R.string.api_key);
             String urlString = "https://maps.googleapis.com/maps/api/directions/json?" +
                     "origin=" + originLatLng.latitude + "," + originLatLng.longitude +
@@ -101,7 +108,7 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
                     "&key=" + apiKey;
 
             if (requestAlternativeRoutes) {
-                urlString += "&alternatives=true"; // Add parameter to request alternative routes
+                urlString += "&alternatives=true";
             }
 
             URL url = new URL(urlString);
@@ -120,6 +127,12 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
 
             for (int i = 0; i < routesArray.length(); i++) {
                 JSONObject route = routesArray.getJSONObject(i);
+                JSONObject legs = route.getJSONArray("legs").getJSONObject(0);
+
+                routeName = route.getString("summary");
+                routeTime = legs.getJSONObject("duration").getString("text");
+                routeDistance = legs.getJSONObject("distance").getString("text");
+
                 JSONObject overviewPolyline = route.getJSONObject("overview_polyline");
                 String points = overviewPolyline.getString("points");
                 List<LatLng> decodedPolyline = decodePolyline(points);
@@ -134,6 +147,7 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
 
 
 
+
     // Inside onPostExecute method
     @Override
     protected void onPostExecute(List<List<LatLng>> decodedPolylines) {
@@ -143,10 +157,10 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
 
         // Pass route data back to MapActivity
         if (mapActivity != null) {
-            mapActivity.onRouteObtained(decodedPolylines.get(0)); // Pass only the primary polyline
+            mapActivity.onRouteObtained(Collections.singletonList(decodedPolylines.get(0)), routeName, routeTime, routeDistance); // Pass only the primary polyline
         }
 
-        for (int i = 0; i < decodedPolylines.size(); i++) { // Added loop counter
+        for (int i = 0; i < decodedPolylines.size(); i++) { // Loop through each decoded polyline
             List<LatLng> decodedPolyline = decodedPolylines.get(i); // Get current polyline
             if (!decodedPolyline.isEmpty()) {
                 PolylineOptions polylineOptions = new PolylineOptions();
@@ -163,10 +177,7 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
                     polyline = gMap.addPolyline(polylineOptions);
                 }
 
-                // Set click listener for polylines after adding them to the map
-                polyline.setClickable(true);
-                polyline.setTag("Distance: " + computePolylineDistance(decodedPolyline)); // Set tag for polyline
-                polylines.add(polyline);
+                polylines.add(polyline); // Add polyline to list
 
                 // Add markers for origin and destination
                 MarkerOptions originMarkerOptions = new MarkerOptions()
@@ -191,91 +202,9 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
                 CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, padding);
                 gMap.animateCamera(cameraUpdate);
             }
-
-
-            // Set click listener for polylines after adding them to the map
-            GoogleMap.OnPolylineClickListener polylineClickListener = new GoogleMap.OnPolylineClickListener() {
-                @Override
-                public void onPolylineClick(Polyline clickedPolyline) {
-                    try {
-                        for (Polyline line : polylines) {
-                            if (line.equals(clickedPolyline)) {
-                                line.setColor(Color.parseColor("#1A73E8"));
-                                line.setZIndex(1);
-                            } else {
-                                line.setColor(Color.parseColor("#7A7878"));
-                                line.setZIndex(0);
-                            }
-                        }
-                        zoomToPolyline(clickedPolyline);
-
-                        if (metricsActivity == null) {
-                            Log.d(TAG, "Fetching crime data for clicked polyline...");
-                            crimeData.fetchCrimeData(clickedPolyline.getPoints(), new CrimeData.CrimeDataCallback() {
-                                @Override
-                                public void onCrimeDataReceived(int count) {
-                                    Log.d(TAG, "CCTV data received: " + count);
-                                    if (metricsActivity != null) {
-                                        metricsActivity.updateCCTVCount(count);
-                                    } else {
-                                        Log.e(TAG, "MetricsActivity is null when updating Crime count");
-                                        // Handle the case where metricsActivity is null, possibly by logging or other means
-                                    }
-                                }
-                            });
-
-                            Log.d(TAG, "Fetching CCTV data for clicked polyline...");
-                            cctvData.fetchCCTVData(clickedPolyline.getPoints(), new CCTVData.CCTVDataCallback() {
-                                @Override
-                                public void onCCTVDataReceived(int count) {
-                                    Log.d(TAG, "CCTV data received: " + count);
-                                    if (metricsActivity != null) {
-                                        metricsActivity.updateCCTVCount(count);
-                                    } else {
-                                        Log.e(TAG, "MetricsActivity is null when updating CCTV count");
-                                        // Handle the case where metricsActivity is null, possibly by logging or other means
-                                    }
-                                }
-                            });
-
-                            Log.d(TAG, "Fetching police station data for clicked polyline...");
-                            policeStationData.fetchPoliceStationData(clickedPolyline.getPoints(), new PoliceStationData.PoliceStationDataCallback() {
-                                @Override
-                                public void onPoliceStationDataReceived (int count) {
-                                    Log.d(TAG, "CCTV data received: " + count);
-                                    if (metricsActivity != null) {
-                                        metricsActivity.updatePoliceCount(count);
-                                    } else {
-                                        Log.e(TAG, "MetricsActivity is null when updating Police count");
-                                        // Handle the case where metricsActivity is null, possibly by logging or other means
-                                    }
-                                }
-                            });
-
-                            Log.d(TAG, "Fetching streetlight data for clicked polyline...");
-                            streetlightData.fetchStreetlightData(clickedPolyline.getPoints(), new StreetlightData.StreetlightDataCallback() {
-                                @Override
-                                public void onStreetlightDataReceived(int count) {
-                                    Log.d(TAG, "CCTV data received: " + count);
-                                    if (metricsActivity != null) {
-                                        metricsActivity.updateStreetlightCount(count);
-                                    } else {
-                                        Log.e(TAG, "MetricsActivity is null when updating Streetlight count");
-                                        // Handle the case where metricsActivity is null, possibly by logging or other means
-                                    }
-                                }
-                            });
-                        } else {
-                            Log.e(TAG, "MetricsActivity is null.");
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error handling polyline click: ", e);
-                    }
-                }
-            };
-            gMap.setOnPolylineClickListener(polylineClickListener);
         }
     }
+
 
 
 

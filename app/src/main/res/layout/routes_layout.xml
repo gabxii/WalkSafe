@@ -1,0 +1,125 @@
+<!-- list_item_route.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:id="@+id/routes_Layout">
+
+    <!-- Route Details Column -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginEnd="30dp"
+        android:orientation="vertical">
+
+        <!-- Route Name -->
+        <TextView
+            android:id="@+id/routeNameTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Route Name"
+            android:textColor="@color/dark500"
+            android:textSize="16sp"
+            android:fontFamily="@font/neuehaasdisplaybold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Time -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/routeTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Estimated Time: "
+                android:textColor="@color/dark500"
+                android:textSize="14sp"
+                android:fontFamily="@font/neuehaasdisplayroman" />
+
+            <TextView
+                android:id="@+id/routeTimeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dynamic Time"
+                android:textColor="@color/dark500"
+                android:textSize="14sp"
+                android:fontFamily="@font/neuehaasdisplayroman" />
+        </LinearLayout>
+
+        <!-- Kilometers -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/routeDistance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Distance: "
+                android:textColor="@color/dark500"
+                android:textSize="14sp"
+                android:fontFamily="@font/neuehaasdisplayroman" />
+
+            <TextView
+                android:id="@+id/routeDistanceTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dynamic Kilometers"
+                android:textColor="@color/dark500"
+                android:textSize="14sp"
+                android:fontFamily="@font/neuehaasdisplayroman" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Circular Progress Bar and Arrow Indicator Column -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:id="@+id/progressBarButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true">
+
+            <!-- Circular Progress Bar -->
+            <ProgressBar
+                android:id="@+id/overallsafetyProgressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progressDrawable="@drawable/circular_progress_bar" />
+
+            <!-- Safety Score Text -->
+            <TextView
+                android:id="@+id/overallsafetyCountTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textColor="@color/dark500"
+                android:textSize="16sp"
+                android:text="75"/> <!-- Example text; replace with dynamic data -->
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- Arrow Indicator -->
+    <ImageView
+        android:id="@+id/arrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="7dp"
+        android:layout_marginEnd="-6dp"
+        android:src="@drawable/arrow_right"
+        android:contentDescription="More Details"
+        android:layout_gravity="center_vertical" />
+</LinearLayout>

@@ -9,8 +9,12 @@ import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,7 +24,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
 
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -34,6 +37,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
@@ -47,7 +51,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnPolylineClickListener {
+
+public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private boolean locationPermissionGranted;
@@ -88,15 +93,23 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private TextView streetlightTextView;
     private ProgressBar overallsafetyProgressBar;
     private TextView overallsafetyTextView;
+    private TextView routeNameTextView;
+    private TextView routeTimeTextView;
+    private TextView routeDistanceTextView;
+    private ListView listView;
+
+    private List<List<LatLng>> decodedPolylines;
+
 
     private ProgressBar progressBar;
-    private ImageView arrowIndicator;
+    private ImageView arrow;
 
     // Declare count variables
     private int crimeCount = 0;
     private int cctvCount = 0;
     private int policeCount = 0;
     private int streetlightCount = 0;
+
 
 
     @Override
@@ -136,6 +149,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         bottomSheet = findViewById(R.id.bottomSheetLinearLayout);
         bottomSheetLayout = findViewById(R.id.metricsLinearLayout);
 
+        FrameLayout progressBarButton = findViewById(R.id.progressBarButton);
         overallsafetyLayout = findViewById(R.id.overallsafety_Layout);
 
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
@@ -152,37 +166,42 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         streetlightTextView = findViewById(R.id.streetlightCountTextView);
         overallsafetyProgressBar = findViewById(R.id.overallsafetyProgressBar);
         overallsafetyTextView = findViewById(R.id.overallsafetyCountTextView);
-
+        routeNameTextView = bottomSheet.findViewById(R.id.routeNameTextView);
+        routeTimeTextView = bottomSheet.findViewById(R.id.routeTimeTextView);
+        routeDistanceTextView = bottomSheet.findViewById(R.id.routeDistanceTextView);
+        arrow = findViewById(R.id.arrow);
 
         ArrayList<LatLng> polylinePoints = new ArrayList<>();
 
-        // Set click listeners
-        findViewById(R.id.progressBarButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (route != null && !route.isEmpty()) {
-                    navigateToMetrics();
-                    // Optionally navigate to MetricsActivity if needed
-                    // navigateToMetrics();
-                } else {
-                    Toast.makeText(MapActivity.this, "No route available", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
 
-        findViewById(R.id.arrow).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (route != null && !route.isEmpty()) {
-                    navigateToMetrics();
-                    // Optionally navigate to MetricsActivity if needed
-                    // navigateToMetrics();
-                } else {
-                    Toast.makeText(MapActivity.this, "No route available", Toast.LENGTH_SHORT).show();
+        // Example of setting click listener on a button
+        Button startNavigationButton = findViewById(R.id.startNavigationButton);
+        if (startNavigationButton != null) {
+            startNavigationButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // Handle button click event
                 }
-            }
-        });
+            });
+        } else {
+            Log.e(TAG, "startNavigationButton is null. Check your layout or ID.");
+        }
 
+//        // Set click listener for progress bar
+//        progressBarButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                navigateToMetrics();
+//            }
+//        });
+//
+//        // Set click listener for arrow
+//        arrow.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                navigateToMetrics();
+//            }
+//        });
 
         // Set bottom sheet callback
         bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
@@ -291,63 +310,86 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         updateLocationUI();
         getCurrentLocation();
 
+        //Initialize Safety Metric Classes
         cctvData = new CCTVData(this, gMap);
         crimeData = new CrimeData(this, gMap);
         policeStationData = new PoliceStationData(this, gMap);
-
-        gMap.setOnPolylineClickListener(this); // Add the OnPolylineClickListener to the GoogleMap instance
-
+        streetlightData = new StreetlightData(this, gMap);
     }
-
 
 
     // Show obtained Route
-    public void onRouteObtained(List<LatLng> route) {
-        if (gMap != null && !route.isEmpty()) {
-            this.route = route; // Store the route data
-            this.polylinePoints = route; // Store the polyline points for later use
-            gMap.setOnPolylineClickListener(this); // Set polyline click listener
+    public void onRouteObtained(List<List<LatLng>> routes, String routeName, String routeTime, String routeDistance) {
+        if (gMap != null && !routes.isEmpty()) {
+            // Clear any existing polylines and metrics data
+            clearMap();
 
-            // Proceed with fetching data
-            fetchCrimeData(route);
-            fetchStreetlightData(route);
-            fetchPoliceData(route);
-            fetchCCTVData(route);
+            // Iterate through each route
+            for (int i = 0; i < routes.size(); i++) {
+                List<LatLng> route = routes.get(i);
 
+                // Add polyline for each route segment
+                Polyline polyline = gMap.addPolyline(new PolylineOptions()
+                        .addAll(route)
+                        .width(12)
+                        .color(Color.GRAY)
+                        .clickable(true));
+                polyline.setTag("Route " + (i + 1));
+                polylines.add(polyline); // Add polyline to list
 
+                // Fetch data for each route segment
+                fetchCrimeData(route, i);
+                fetchStreetlightData(route, i);
+                fetchPoliceData(route, i);
+                fetchCCTVData(route, i);
+
+                // Update route details in the bottom sheet
+                routeNameTextView.setText(routeName);
+                routeTimeTextView.setText(routeTime);
+                routeDistanceTextView.setText(routeDistance);
+            }
+
+            // Show the bottom sheet and update UI
             showBottomSheet(true);
         } else {
-            // Handle case where route is null or empty
-            Log.e(TAG, "Route is null or empty");
-            Toast.makeText(this, "Failed to obtain route", Toast.LENGTH_SHORT).show();
+            // Handle case where route or route details are null or empty
+            Log.e(TAG, "Route or route details are null or empty");
+            Toast.makeText(this, "Failed to obtain route or route details", Toast.LENGTH_SHORT).show();
         }
     }
 
 
-    @Override
-    public void onPolylineClick(Polyline polyline) {
-        if (polyline != null && polyline.getTag() != null) {
-            polyline.setColor(Color.parseColor("#1A73E8"));
-            zoomToPolyline(polyline);
-            Toast.makeText(this, polyline.getTag().toString(), Toast.LENGTH_SHORT).show();
 
-            // Clear previous data and fetch new data for the clicked polyline
-            clearMap(); // Clear previous markers and polylines
-            clearMetrics(); // Clear previous metrics data
 
-            // Fetch data for the clicked polyline
-            fetchCrimeData(polyline.getPoints());
-            fetchStreetlightData(polyline.getPoints());
-            fetchPoliceData(polyline.getPoints());
-            fetchCCTVData(polyline.getPoints());
 
-            showBottomSheet(true);
-        } else {
-            showBottomSheet(false);
-        }
-    }
 
-    private void fetchCrimeData(List<LatLng> route) {
+
+
+
+//    @Override
+//    public void onPolylineClick(Polyline polyline) {
+//        if (polyline != null && polyline.getTag() != null) {
+//            polyline.setColor(Color.parseColor("#1A73E8"));
+//            zoomToPolyline(polyline);
+//            Toast.makeText(this, polyline.getTag().toString(), Toast.LENGTH_SHORT).show();
+//
+//            // Clear previous data and fetch new data for the clicked polyline
+//            clearMap(); // Clear previous markers and polylines
+//            clearMetrics(); // Clear previous metrics data
+//
+//            // Fetch data for the clicked polyline
+//            fetchCrimeData(polyline.getPoints());
+//            fetchStreetlightData(polyline.getPoints());
+//            fetchPoliceData(polyline.getPoints());
+//            fetchCCTVData(polyline.getPoints());
+//
+//            showBottomSheet(true);
+//        } else {
+//            showBottomSheet(false);
+//        }
+//    }
+
+    private void fetchCrimeData(List<LatLng> route, int i) {
         crimeData.fetchCrimeData(route, new CrimeData.CrimeDataCallback() {
             @Override
             public void onCrimeDataReceived(int count) {
@@ -358,7 +400,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
-    private void fetchCCTVData(List<LatLng> route) {
+    private void fetchCCTVData(List<LatLng> route, int i) {
         cctvData.fetchCCTVData(route, new CCTVData.CCTVDataCallback() {
             @Override
             public void onCCTVDataReceived(int count) {
@@ -369,7 +411,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
-    private void fetchPoliceData(List<LatLng> route) {
+    private void fetchPoliceData(List<LatLng> route, int i) {
         policeStationData.fetchPoliceStationData(route, new PoliceStationData.PoliceStationDataCallback() {
             @Override
             public void onPoliceStationDataReceived(int count) {
@@ -380,7 +422,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
-    private void fetchStreetlightData(List<LatLng> route) {
+    private void fetchStreetlightData(List<LatLng> route, int i) {
         streetlightData.fetchStreetlightData(route, new StreetlightData.StreetlightDataCallback() {
             @Override
             public void onStreetlightDataReceived(int count) {
@@ -643,4 +685,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
         updateLocationUI();
     }
+
+
 }
