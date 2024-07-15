@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -390,17 +391,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     // Method to handle route container click
-    // Method to handle route container click
     private void onRouteContainerClicked(int routeIndex) {
         // Change background color of clicked route container
         if (clickedRouteIndex != -1) {
             View previousClickedView = routesContainer.getChildAt(clickedRouteIndex);
             previousClickedView.setBackgroundColor(Color.TRANSPARENT); // Reset previous clicked view color
 
-            // Reset previous polyline color (assuming polylines list is updated in onRouteObtained)
+            // Reset previous polyline color and Z-index
             if (clickedRouteIndex < polylines.size()) {
                 Polyline previousPolyline = polylines.get(clickedRouteIndex);
                 previousPolyline.setColor(Color.GRAY); // Reset to default color
+                previousPolyline.setZIndex(0); // Reset Z-index
             }
         }
 
@@ -408,14 +409,29 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         clickedView.setBackgroundColor(ContextCompat.getColor(this, R.color.ucGreen200));
         clickedRouteIndex = routeIndex; // Update clicked route index
 
-        // Change polyline color for the clicked route
+        // Change polyline color and Z-index for the clicked route
         if (routeIndex < polylines.size()) {
             Polyline clickedPolyline = polylines.get(routeIndex);
-            clickedPolyline.setColor(ContextCompat.getColor(this, R.color.ucGreen400));
+            clickedPolyline.setColor(ContextCompat.getColor(this, R.color.polylineColor));
+            clickedPolyline.setZIndex(1); // Bring to front by setting a higher Z-index
+
+            // Calculate the bounds of the clicked polyline
+            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+            for (LatLng point : clickedPolyline.getPoints()) {
+                builder.include(point);
+            }
+            LatLngBounds bounds = builder.build();
+
+            // Move the camera to the bounds of the polyline
+            int padding = 30; // Adjust padding as needed
+            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, padding);
+            gMap.animateCamera(cameraUpdate);
         }
 
         // Optionally, perform other actions like navigating to another screen
     }
+
+
 
 
     // Method to handle progress bar or arrow click
