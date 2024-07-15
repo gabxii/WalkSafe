@@ -9,9 +9,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -76,7 +74,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private CCTVData cctvData;
     private PoliceStationData policeStationData;
     private StreetlightData streetlightData;
-    private SafetyIndex safetyIndex;
+//    private SafetyIndex safetyIndex;
 
     private View bottomSheet;
 
@@ -148,7 +146,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         streetlightData = new StreetlightData(this, gMap);
 
         // Initialize Safety Index
-        safetyIndex = new SafetyIndex(this, gMap);
+//        safetyIndex = new SafetyIndex(this, gMap);
 
         // Find views
         bottomSheet = findViewById(R.id.bottomSheetLinearLayout);
@@ -292,10 +290,19 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
     // Show obtained Route
+    // Define class-level fields
+    private List<String> routeNames;
+    private List<List<LatLng>> routes;
+
     public void onRouteObtained(List<List<LatLng>> routes, List<String> routeNames, List<String> routeTimes, List<String> routeDistances) {
-        if (gMap != null && !routes.isEmpty() && routes.size() == routeNames.size() && routes.size() == routeTimes.size() && routes.size() == routeDistances.size()) {
+        this.routes = routes; // Assign routes to class-level variable
+        this.routeNames = routeNames; // Assign routeNames to class-level variable
+
+        if (gMap != null && !routes.isEmpty() && routes.size() == routeNames.size()
+                && routes.size() == routeTimes.size() && routes.size() == routeDistances.size()) {
             // Clear any existing polylines and metrics data
             clearMap();
+            polylines.clear();
 
             // Clear any existing views in the container
             routesContainer.removeAllViews();
@@ -325,11 +332,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 routeTimeTextView.setText(routeTimes.get(i));
                 routeDistanceTextView.setText(routeDistances.get(i));
 
-                // Fetch and display additional data
-                fetchCrimeData(route, i); // Example method to fetch crime count
-                fetchCCTVData(route, i); // Example method to fetch CCTV count
-                fetchPoliceData(route, i); // Example method to fetch police count
-                fetchStreetlightData(route, i); // Example method to fetch streetlight count
+                // Fetch and display additional data (example methods)
+                fetchCrimeData(route, i); // Fetch crime count based on route
+                fetchCCTVData(route, i); // Fetch CCTV count based on route
+                fetchPoliceData(route, i); // Fetch police count based on route
+                fetchStreetlightData(route, i); // Fetch streetlight count based on route
 
                 // Find views in the inflated layout for this route
                 ProgressBar progressBar = routeView.findViewById(R.id.overallsafetyProgressBar);
@@ -344,7 +351,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     @Override
                     public void onClick(View v) {
                         int routeIndex = (int) v.getTag();
-                        navigateToMetrics(routeIndex, routeNames.get(routeIndex), crimeCount, cctvCount, policeCount, streetlightCount);
+                        Log.d(TAG, "Progress bar clicked for route index: " + routeIndex);
+                        onRouteClicked(routeIndex);
                     }
                 });
 
@@ -352,7 +360,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     @Override
                     public void onClick(View v) {
                         int routeIndex = (int) v.getTag();
-                        navigateToMetrics(routeIndex, routeNames.get(routeIndex), crimeCount, cctvCount, policeCount, streetlightCount);
+                        Log.d(TAG, "Arrow clicked for route index: " + routeIndex);
+                        onRouteClicked(routeIndex);
                     }
                 });
 
@@ -369,6 +378,20 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
+    // Method to handle route container click
+    private void onRouteClicked(int routeIndex) {
+        // Fetch data based on the clicked route index
+        // Example: Fetch crime, CCTV, police, streetlight data for the selected routeIndex
+        String routeName = routeNames.get(routeIndex);
+        int crimeCount = fetchCrimeData(routes.get(routeIndex), routeIndex);
+        int cctvCount = fetchCCTVData(routes.get(routeIndex), routeIndex);
+        int policeCount = fetchPoliceData(routes.get(routeIndex), routeIndex);
+        int streetlightCount = fetchStreetlightData(routes.get(routeIndex), routeIndex);
+
+        // Navigate to MetricsActivity with the fetched data
+        navigateToMetrics(routeIndex, routeName, crimeCount, cctvCount, policeCount, streetlightCount);
+    }
+
     // Method to navigate to metrics activity with selected route index and data
     private void navigateToMetrics(int routeIndex, String routeName, int crimeCount, int cctvCount, int policeCount, int streetlightCount) {
         // Implement navigation to MetricsActivity passing routeIndex and data to show relevant metrics
@@ -383,49 +406,54 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
 
+    private int fetchCrimeData(List<LatLng> route, int i) {
 
-    private void fetchCrimeData(List<LatLng> route, int i) {
         crimeData.fetchCrimeData(route, new CrimeData.CrimeDataCallback() {
             @Override
-            public void onCrimeDataReceived(int count) {
-                Log.d(TAG, "Crime data received: " + count);
-                crimeCount = count; // Update crimeCount variable
-                updateMetricsActivityCrimeCount(count);
-            }
-        });
-    }
-
-    private void fetchCCTVData(List<LatLng> route, int i) {
-        cctvData.fetchCCTVData(route, new CCTVData.CCTVDataCallback() {
-            @Override
-            public void onCCTVDataReceived(int count) {
+            public void onCrimeDataReceived( int count) {
                 Log.d(TAG, "CCTV data received: " + count);
-                cctvCount = count; // Update cctvCount variable
+                crimeCount = count; // Update cctvCount variable
                 updateMetricsActivityCCTVCount(count);
             }
         });
+        return crimeCount;
     }
 
-    private void fetchPoliceData(List<LatLng> route, int i) {
-        policeStationData.fetchPoliceStationData(route, new PoliceStationData.PoliceStationDataCallback() {
+
+    private int fetchCCTVData(List<LatLng> route, int i) {
+        cctvData.fetchCCTVData(route, new CCTVData.CCTVDataCallback() {
             @Override
-            public void onPoliceStationDataReceived(int count) {
-                Log.d(TAG, "Police station data received: " + count);
-                policeCount = count; // Update policeCount variable
-                updateMetricsActivityPoliceCount(count);
+            public void onCCTVDataReceived( int count) {
+                Log.d(TAG, "CCTV data received: " + count);
+                cctvCount = count; // Update cctvCount variable
+                updateMetricsActivityCCTVCount( count);
             }
         });
+        return cctvCount;
     }
 
-    private void fetchStreetlightData(List<LatLng> route, int i) {
+    private int fetchPoliceData(List<LatLng> route, int i) {
+        policeStationData.fetchPoliceStationData(route, new PoliceStationData.PoliceStationDataCallback() {
+            @Override
+            public void onPoliceStationDataReceived( int count) {
+                Log.d(TAG, "Police station data received: " + count);
+                policeCount = count; // Update policeCount variable
+                updateMetricsActivityPoliceCount( count);
+            }
+        });
+        return policeCount;
+    }
+
+    private int fetchStreetlightData(List<LatLng> route, int i) {
         streetlightData.fetchStreetlightData(route, new StreetlightData.StreetlightDataCallback() {
             @Override
             public void onStreetlightDataReceived(int count) {
                 Log.d(TAG, "Streetlight data received: " + count);
                 streetlightCount = count; // Update streetlightCount variable
-                updateMetricsActivityStreetlightCount(count);
+                updateMetricsActivityStreetlightCount( count);
             }
         });
+        return streetlightCount;
     }
 
 
@@ -436,7 +464,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
-    private void updateMetricsActivityCCTVCount(int count) {
+    private void updateMetricsActivityCCTVCount( int count) {
         if (metricsActivity != null) {
             metricsActivity.updateCCTVCount(count);
         }

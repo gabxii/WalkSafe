@@ -50,9 +50,14 @@ public class MetricsActivity extends AppCompatActivity {
             }
         });
 
+
+
         // Retrieve intent extras
         Intent intent = getIntent();
         if (intent != null) {
+            // Retrieve route index
+            int routeIndex = intent.getIntExtra("routeIndex", -1); // -1 is default or invalid index
+
             // Retrieve metrics counts for the selected route
             String routeName = intent.getStringExtra("routeName");
             int crimeCount = intent.getIntExtra("crimeCount", 0);
@@ -74,15 +79,16 @@ public class MetricsActivity extends AppCompatActivity {
         }
     }
 
-    // Method to retrieve crime count for selected route
-    private int getCrimeCountForRoute(int routeIndex) {
-        // Replace with actual implementation to fetch crime count for routeIndex
-        // Example: return crimeCounts.get(routeIndex);
-        return getCrimeCountForRoute(0); // Example value
-    }
-
     public void updateRouteTitle(String routeName) {
         metricsRouteTitle.setText(routeName);
+    }
+
+    private void clearMetrics() {
+        // Clear previous metric counts or update to zero
+        updateCrimeCount(0);
+        updateCCTVCount(0);
+        updatePoliceCount(0);
+        updateStreetlightCount(0);
     }
 
     // Update crime count UI
