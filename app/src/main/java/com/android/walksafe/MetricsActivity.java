@@ -1,6 +1,8 @@
 package com.android.walksafe;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -83,35 +85,58 @@ public class MetricsActivity extends AppCompatActivity {
         metricsRouteTitle.setText(routeName);
     }
 
-    private void clearMetrics() {
-        // Clear previous metric counts or update to zero
-        updateCrimeCount(0);
-        updateCCTVCount(0);
-        updatePoliceCount(0);
-        updateStreetlightCount(0);
-    }
 
     // Update crime count UI
     public void updateCrimeCount(int count) {
         crimeCountTextView.setText(String.valueOf(count));
+
+        if (count < 10) {
+            crimeProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.safeColor))); // Red color for crime
+        } if (count < 20) {
+            crimeProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.mediumColor)));// No data color for streetlight
+        } else {
+            crimeProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.dangerColor)));
+        }
+
         crimeProgressBar.setProgress(count);
     }
 
     // Update CCTV count UI
     public void updateCCTVCount(int count) {
         cctvCountTextView.setText(String.valueOf(count));
+
+        if (count < 10) {
+            cctvProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.dangerColor))); // Red color for crime
+        } if (count > 10) {
+            cctvProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.safeColor)));// No data color for streetlight
+        }
+
         cctvProgressBar.setProgress(count);
     }
 
     // Update police count UI
     public void updatePoliceCount(int count) {
         policeCountTextView.setText(String.valueOf(count));
+
+        if (count < 10) {
+            policeProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.dangerColor))); // Red color for crime
+        } if (count > 10) {
+            policeProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.safeColor)));// No data color for streetlight
+        }
+
         policeProgressBar.setProgress(count);
     }
 
     // Update streetlight count UI
     public void updateStreetlightCount(int count) {
         streetlightCountTextView.setText(String.valueOf(count));
+
+        if (count < 10) {
+            streetlightProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.dangerColor))); // Red color for crime
+        } if (count > 10) {
+            streetlightProgressBar.setProgressTintList(ColorStateList.valueOf(getResources().getColor(R.color.safeColor)));// No data color for streetlight
+        }
+
         streetlightProgressBar.setProgress(count);
     }
 }
