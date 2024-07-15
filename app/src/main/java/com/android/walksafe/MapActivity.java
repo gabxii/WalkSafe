@@ -1,5 +1,7 @@
 package com.android.walksafe;
 
+import static java.security.AccessController.getContext;
+
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -46,6 +48,7 @@ import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 
+import java.security.AccessController;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -112,7 +115,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private int policeCount = 0;
     private int streetlightCount = 0;
     private String routeName = "";
-
+    private List<String> routeTimes;
+    private List<String> routeDistances;
+    private int clickedRouteIndex = -1;
 
 
     @Override
@@ -297,6 +302,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     public void onRouteObtained(List<List<LatLng>> routes, List<String> routeNames, List<String> routeTimes, List<String> routeDistances) {
         this.routes = routes; // Assign routes to class-level variable
         this.routeNames = routeNames; // Assign routeNames to class-level variable
+        this.routeTimes = routeTimes; // Assign routeTimes to class-level variable
+        this.routeDistances = routeDistances; // Assign routeDistances to class-level variable
 
         if (gMap != null && !routes.isEmpty() && routes.size() == routeNames.size()
                 && routes.size() == routeTimes.size() && routes.size() == routeDistances.size()) {
@@ -332,12 +339,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 routeTimeTextView.setText(routeTimes.get(i));
                 routeDistanceTextView.setText(routeDistances.get(i));
 
-                // Fetch and display additional data (example methods)
-                fetchCrimeData(route, i); // Fetch crime count based on route
-                fetchCCTVData(route, i); // Fetch CCTV count based on route
-                fetchPoliceData(route, i); // Fetch police count based on route
-                fetchStreetlightData(route, i); // Fetch streetlight count based on route
-
                 // Find views in the inflated layout for this route
                 ProgressBar progressBar = routeView.findViewById(R.id.overallsafetyProgressBar);
                 ImageView arrow = routeView.findViewById(R.id.arrow);
@@ -352,7 +353,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     public void onClick(View v) {
                         int routeIndex = (int) v.getTag();
                         Log.d(TAG, "Progress bar clicked for route index: " + routeIndex);
-                        onRouteClicked(routeIndex);
+                        onButtonClicked(routeIndex);
                     }
                 });
 
@@ -361,7 +362,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     public void onClick(View v) {
                         int routeIndex = (int) v.getTag();
                         Log.d(TAG, "Arrow clicked for route index: " + routeIndex);
-                        onRouteClicked(routeIndex);
+                        onButtonClicked(routeIndex);
+                    }
+                });
+
+                // Set click listener for the entire route view container
+                routeView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        int routeIndex = (int) progressBar.getTag(); // Get route index from progress bar tag
+                        Log.d(TAG, "Route container clicked for route index: " + routeIndex);
+                        onRouteContainerClicked(routeIndex);
                     }
                 });
 
@@ -379,7 +390,36 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     // Method to handle route container click
-    private void onRouteClicked(int routeIndex) {
+    // Method to handle route container click
+    private void onRouteContainerClicked(int routeIndex) {
+        // Change background color of clicked route container
+        if (clickedRouteIndex != -1) {
+            View previousClickedView = routesContainer.getChildAt(clickedRouteIndex);
+            previousClickedView.setBackgroundColor(Color.TRANSPARENT); // Reset previous clicked view color
+
+            // Reset previous polyline color (assuming polylines list is updated in onRouteObtained)
+            if (clickedRouteIndex < polylines.size()) {
+                Polyline previousPolyline = polylines.get(clickedRouteIndex);
+                previousPolyline.setColor(Color.GRAY); // Reset to default color
+            }
+        }
+
+        View clickedView = routesContainer.getChildAt(routeIndex);
+        clickedView.setBackgroundColor(ContextCompat.getColor(this, R.color.ucGreen200));
+        clickedRouteIndex = routeIndex; // Update clicked route index
+
+        // Change polyline color for the clicked route
+        if (routeIndex < polylines.size()) {
+            Polyline clickedPolyline = polylines.get(routeIndex);
+            clickedPolyline.setColor(ContextCompat.getColor(this, R.color.ucGreen400));
+        }
+
+        // Optionally, perform other actions like navigating to another screen
+    }
+
+
+    // Method to handle progress bar or arrow click
+    private void onButtonClicked(int routeIndex) {
         // Fetch data based on the clicked route index
         // Example: Fetch crime, CCTV, police, streetlight data for the selected routeIndex
         String routeName = routeNames.get(routeIndex);
@@ -483,16 +523,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-
-    // Helper method to clear previous metrics data
-    private void clearMetrics() {
-        // Clear previous metric counts or update to zero
-        metricsActivity.updateCrimeCount(0);
-        metricsActivity.updateCCTVCount(0);
-        metricsActivity.updatePoliceCount(0);
-        metricsActivity.updateStreetlightCount(0);
-    }
-
     public void updateBottomSheetOverallCount(int count) {
         TextView overallsafetyCountTextView = overallsafetyLayout.findViewById(R.id.overallsafetyCountTextView);
         Log.d(TAG, "CCTV Count: " + count); // Log count for debugging
@@ -511,77 +541,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         overallsafetyProgressBar.setProgress(count);
     }
 
-//    public void updateBottomSheetCCTVCount(int count) {
-//        TextView cctvCountTextView = metricsLayout.findViewById(R.id.cctvCountTextView);
-//        Log.d(TAG, "CCTV Count: " + count); // Log count for debugging
-//        cctvCountTextView.setText(String.valueOf(count)); // Convert count to String
-//
-//        // Adjust color based on count
-//        if (count < 10) {
-//            setProgressBarColor(cctvProgressBar, R.color.dangerColor);
-//        } else if (count < 15) {
-//            setProgressBarColor(cctvProgressBar, R.color.mediumColor);
-//        } else {
-//            setProgressBarColor(cctvProgressBar, R.color.safeColor);
-//        }
-//
-//        // Update progress bar value
-//        cctvProgressBar.setProgress(count);
-//    }
-//
-//    public void updateBottomSheetCrimeCount(int count) {
-//        TextView crimeCountTextView = metricsLayout.findViewById(R.id.crimeCountTextView);
-//        Log.d(TAG, "Crime Count: " + count); // Log count for debugging
-//        crimeCountTextView.setText(String.valueOf(count)); // Convert count to String
-//
-//        // Adjust color based on count
-//        if (count < 10) {
-//            setProgressBarColor(crimeProgressBar, R.color.safeColor);
-//        } else if (count < 20) {
-//            setProgressBarColor(crimeProgressBar, R.color.mediumColor);
-//        } else {
-//            setProgressBarColor(crimeProgressBar, R.color.dangerColor);
-//        }
-//
-//        // Update progress bar value
-//        crimeProgressBar.setProgress(count);
-//    }
-//
-//    public void updateBottomSheetPoliceStationCount(int count) {
-//        TextView policeCountTextView = metricsLayout.findViewById(R.id.policeCountTextView);
-//        Log.d(TAG, "Police Station Count: " + count); // Log count for debugging
-//        policeCountTextView.setText(String.valueOf(count)); // Convert count to String
-//
-//        // Adjust color based on count
-//        if (count < 10) {
-//            setProgressBarColor(policeProgressBar, R.color.dangerColor);
-//        } else if (count < 20) {
-//            setProgressBarColor(policeProgressBar, R.color.safeColor);
-//        } else {
-//            setProgressBarColor(policeProgressBar, R.color.dangerColor);
-//        }
-//
-//        // Update progress bar value
-//        policeProgressBar.setProgress(count);
-//    }
-//
-//    public void updateBottomSheetStreetlightCount(int count) {
-//        TextView streetlightCountTextView = metricsLayout.findViewById(R.id.streetlightCountTextView);
-//        Log.d(TAG, "Streetlight Count: " + count); // Log count for debugging
-//        streetlightCountTextView.setText(String.valueOf(count)); // Convert count to String
-//
-//        // Adjust color based on count
-//        if (count < 10) {
-//            setProgressBarColor(streetlightProgressBar, R.color.dangerColor);
-//        } else if (count < 20) {
-//            setProgressBarColor(streetlightProgressBar, R.color.mediumColor);
-//        } else {
-//            setProgressBarColor(streetlightProgressBar, R.color.safeColor);
-//        }
-//
-//        // Update progress bar value
-//        streetlightProgressBar.setProgress(count);
-//    }
 
 
     // Helper method to set progress bar color dynamically
