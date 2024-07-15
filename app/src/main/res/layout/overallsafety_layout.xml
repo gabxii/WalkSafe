@@ -3,34 +3,39 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/light300"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:gravity="top">
 
     <!-- Status Text View -->
     <TextView
-        android:id="@+id/safetyStatusTexatView"
+        android:id="@+id/safetyStatusTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="8dp"
         android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
         android:fontFamily="@font/neuehaasdisplaybold"
         android:text="Safe to Walk Alone"
         android:textColor="@color/dark500"
         android:textSize="18sp" />
 
-    <!-- Route Details Container -->
-    <LinearLayout
-        android:id="@+id/routesContainer"
+    <!-- Scrollable Container for Routes -->
+    <ScrollView
+        android:id="@+id/routesScrollView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="8dp"
-        android:layout_marginBottom="16dp">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-        <!-- Include Template Layout for Overall Safety -->
-        <include layout="@layout/routes_layout" />
-        <!-- This container will hold dynamically added route detail views -->
-    </LinearLayout>
+        <LinearLayout
+            android:id="@+id/routesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="2dp">
+            <!-- Route details will be dynamically added here -->
+        </LinearLayout>
+
+    </ScrollView>
 
     <!-- Start Navigation Button -->
     <Button
@@ -39,7 +44,7 @@
         android:layout_height="wrap_content"
         android:text="Start Navigation"
         android:textSize="16sp"
-        android:layout_marginTop="5dp"
+        android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
         android:fontFamily="@font/neuehaasdisplaybold"
         android:background="@drawable/button_bg"

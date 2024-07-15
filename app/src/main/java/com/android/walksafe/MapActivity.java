@@ -16,6 +16,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -81,6 +82,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     private LinearLayout overallsafetyLayout;
     private LinearLayout bottomSheetLayout;
+    private LinearLayout routesContainer;
+    private ScrollView routesScrollView;
     private BottomSheetBehavior bottomSheetBehavior;
 
     private ProgressBar crimeProgressBar;
@@ -148,8 +151,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         // Find views
         bottomSheet = findViewById(R.id.bottomSheetLinearLayout);
         bottomSheetLayout = findViewById(R.id.metricsLinearLayout);
+        routesContainer = findViewById(R.id.routesContainer);
+        routesScrollView = findViewById(R.id.routesScrollView);
 
-        FrameLayout progressBarButton = findViewById(R.id.progressBarButton);
+//        ProgressBar progressBarButton = findViewById(R.id.progressBarButton);
         overallsafetyLayout = findViewById(R.id.overallsafety_Layout);
 
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
@@ -188,20 +193,20 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
 
         // Set click listener for progress bar
-        progressBarButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                navigateToMetrics();
-            }
-        });
+//        progressBarButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                navigateToMetrics();
+//            }
+//        });
 
         // Set click listener for arrow
-        arrow.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                navigateToMetrics();
-            }
-        });
+//        arrow.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                navigateToMetrics();
+//            }
+//        });
 
         // Set bottom sheet callback
         bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
@@ -319,34 +324,41 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
     // Show obtained Route
-    public void onRouteObtained(List<List<LatLng>> routes, String routeName, String routeTime, String routeDistance) {
-        if (gMap != null && !routes.isEmpty()) {
+    public void onRouteObtained(List<List<LatLng>> routes, List<String> routeNames, List<String> routeTimes, List<String> routeDistances) {
+        if (gMap != null && !routes.isEmpty() && routes.size() == routeNames.size() && routes.size() == routeTimes.size() && routes.size() == routeDistances.size()) {
             // Clear any existing polylines and metrics data
             clearMap();
+
+            // Clear any existing views in the container
+            routesContainer.removeAllViews();
 
             // Iterate through each route
             for (int i = 0; i < routes.size(); i++) {
                 List<LatLng> route = routes.get(i);
 
-                // Add polyline for each route segment
+                // Add polyline for each route segment (assuming gMap is set correctly)
                 Polyline polyline = gMap.addPolyline(new PolylineOptions()
                         .addAll(route)
                         .width(12)
-                        .color(Color.GRAY)
+                        .color(Color.GRAY) // Adjust colors as necessary
                         .clickable(true));
                 polyline.setTag("Route " + (i + 1));
                 polylines.add(polyline); // Add polyline to list
 
-                // Fetch data for each route segment
-                fetchCrimeData(route, i);
-                fetchStreetlightData(route, i);
-                fetchPoliceData(route, i);
-                fetchCCTVData(route, i);
+                // Inflate a new view for this route
+                View routeView = getLayoutInflater().inflate(R.layout.routes_layout, routesContainer, false);
 
-                // Update route details in the bottom sheet
-                routeNameTextView.setText(routeName);
-                routeTimeTextView.setText(routeTime);
-                routeDistanceTextView.setText(routeDistance);
+                // Set route details in the new view
+                TextView routeNameTextView = routeView.findViewById(R.id.routeNameTextView);
+                TextView routeTimeTextView = routeView.findViewById(R.id.routeTimeTextView);
+                TextView routeDistanceTextView = routeView.findViewById(R.id.routeDistanceTextView);
+
+                routeNameTextView.setText(routeNames.get(i));
+                routeTimeTextView.setText(routeTimes.get(i));
+                routeDistanceTextView.setText(routeDistances.get(i));
+
+                // Add the new route view to the container
+                routesContainer.addView(routeView);
             }
 
             // Show the bottom sheet and update UI
@@ -360,6 +372,28 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
 
+
+
+
+
+
+
+
+    private void addRouteItems() {
+        // Example code to add routes dynamically
+        for (int i = 0; i < 2; i++) {
+            View routeView = getLayoutInflater().inflate(R.layout.routes_layout, routesContainer, false);
+            TextView routeNameTextView = routeView.findViewById(R.id.routeNameTextView);
+            TextView routeTimeTextView = routeView.findViewById(R.id.routeTimeTextView);
+            TextView routeDistanceTextView = routeView.findViewById(R.id.routeDistanceTextView);
+
+            routeNameTextView.setText("Route " + (i + 1));
+            routeTimeTextView.setText("Estimated Time: 25 mins");
+            routeDistanceTextView.setText("Distance: 5 km");
+
+            routesContainer.addView(routeView);
+        }
+    }
 
 
 

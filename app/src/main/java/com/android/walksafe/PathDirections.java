@@ -48,9 +48,9 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
     private final PoliceStationData policeStationData;
     private final StreetlightData streetlightData;
     private SafetyIndex safetyIndex;
-    private String routeName;
-    private String routeTime;
-    private String routeDistance;
+    private List<String> routeName;
+    private List<String> routeTime;
+    private List<String> routeDistance;
 
 
 
@@ -95,11 +95,9 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
         Location origin = locations[0];
         LatLng originLatLng = new LatLng(origin.getLatitude(), origin.getLongitude());
 
-        // Initialize decodedPolylines list
         List<List<LatLng>> decodedPolylines = new ArrayList<>();
 
         try {
-
             String apiKey = context.getString(R.string.api_key);
             String urlString = "https://maps.googleapis.com/maps/api/directions/json?" +
                     "origin=" + originLatLng.latitude + "," + originLatLng.longitude +
@@ -125,13 +123,22 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
             JSONObject jsonObject = new JSONObject(stringBuilder.toString());
             JSONArray routesArray = jsonObject.getJSONArray("routes");
 
+            decodedPolylines.clear(); // Clear existing data
+            routeName = new ArrayList<>();
+            routeTime = new ArrayList<>();
+            routeDistance = new ArrayList<>();
+
             for (int i = 0; i < routesArray.length(); i++) {
                 JSONObject route = routesArray.getJSONObject(i);
                 JSONObject legs = route.getJSONArray("legs").getJSONObject(0);
 
-                routeName = route.getString("summary");
-                routeTime = legs.getJSONObject("duration").getString("text");
-                routeDistance = legs.getJSONObject("distance").getString("text");
+                String currentRouteName = route.getString("summary");
+                String currentRouteTime = legs.getJSONObject("duration").getString("text");
+                String currentRouteDistance = legs.getJSONObject("distance").getString("text");
+
+                routeName.add(currentRouteName);
+                routeTime.add(currentRouteTime);
+                routeDistance.add(currentRouteDistance);
 
                 JSONObject overviewPolyline = route.getJSONObject("overview_polyline");
                 String points = overviewPolyline.getString("points");
@@ -155,55 +162,74 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
         gMap.clear(); // Clear previous polylines from the map
         polylines.clear(); // Clear the list of polylines
 
-        // Pass route data back to MapActivity
-        if (mapActivity != null) {
-            mapActivity.onRouteObtained(Collections.singletonList(decodedPolylines.get(0)), routeName, routeTime, routeDistance); // Pass only the primary polyline
+        // Prepare lists to store route details
+        List<String> routeNames = new ArrayList<>();
+        List<String> routeTimes = new ArrayList<>();
+        List<String> routeDistances = new ArrayList<>();
+
+        // Loop through each decoded polyline
+        for (int i = 0; i < decodedPolylines.size(); i++) {
+            List<LatLng> decodedPolyline = decodedPolylines.get(i);
+
+            // Fetch route details
+            String currentRouteName = routeName.get(i); // Sample route name
+            String currentRouteTime = routeTime.get(i); // Sample route time
+            String currentRouteDistance = routeDistance.get(i); // Sample route distance
+
+            // Add details to lists
+            routeNames.add(currentRouteName);
+            routeTimes.add(currentRouteTime);
+            routeDistances.add(currentRouteDistance);
+
+            // Add polyline to GoogleMap
+            PolylineOptions polylineOptions = new PolylineOptions();
+            polylineOptions.addAll(decodedPolyline);
+
+            // Customize polyline appearance based on index
+            Polyline polyline;
+            if (i == 0) {
+                polylineOptions.color(Color.parseColor("#1A73E8")); // Main route color is blue
+                polylineOptions.zIndex(1); // Set higher z-index for the primary polyline
+                polyline = gMap.addPolyline(polylineOptions);
+                primaryPolyline = polyline; // Store reference to the primary polyline
+            } else {
+                polylineOptions.color(Color.parseColor("#7A7878")); // Set other polylines color to grey
+                polylineOptions.zIndex(0); // Set lower z-index for the alternative polylines
+                polyline = gMap.addPolyline(polylineOptions);
+            }
+
+            polylines.add(polyline); // Add polyline to list
+
+            // Add markers for origin and destination
+            MarkerOptions originMarkerOptions = new MarkerOptions()
+                    .position(decodedPolyline.get(0)) // First point of the polyline (origin)
+                    .icon(BitmapDescriptorFactory.defaultMarker(210))
+                    .title("Origin");
+            MarkerOptions destinationMarkerOptions = new MarkerOptions()
+                    .position(decodedPolyline.get(decodedPolyline.size() - 1)) // Last point of the polyline (destination)
+                    .title(destinationName); // Use destinationName passed from autocompleteFragment
+            gMap.addMarker(originMarkerOptions);
+            gMap.addMarker(destinationMarkerOptions);
+
+            // Zoom to fit all polylines
+            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+            for (LatLng latLng : decodedPolyline) {
+                builder.include(latLng);
+            }
+
+            LatLngBounds bounds = builder.build();
+            int padding = 250; // Padding in pixels
+            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, padding);
+            gMap.animateCamera(cameraUpdate);
         }
 
-        for (int i = 0; i < decodedPolylines.size(); i++) { // Loop through each decoded polyline
-            List<LatLng> decodedPolyline = decodedPolylines.get(i); // Get current polyline
-            if (!decodedPolyline.isEmpty()) {
-                PolylineOptions polylineOptions = new PolylineOptions();
-                polylineOptions.addAll(decodedPolyline);
-                Polyline polyline;
-                if (i == 0) {
-                    polylineOptions.color(Color.parseColor("#1A73E8")); // Main route color is blue
-                    polylineOptions.zIndex(1); // Set higher z-index for the primary polyline
-                    polyline = gMap.addPolyline(polylineOptions);
-                    primaryPolyline = polyline; // Store reference to the primary polyline
-                } else {
-                    polylineOptions.color(Color.parseColor("#7A7878")); // Set other polylines color to grey
-                    polylineOptions.zIndex(0); // Set lower z-index for the alternative polylines
-                    polyline = gMap.addPolyline(polylineOptions);
-                }
-
-                polylines.add(polyline); // Add polyline to list
-
-                // Add markers for origin and destination
-                MarkerOptions originMarkerOptions = new MarkerOptions()
-                        .position(decodedPolyline.get(0)) // First point of the polyline (origin)
-                        .icon(BitmapDescriptorFactory.defaultMarker(210))
-                        .title("Origin");
-                MarkerOptions destinationMarkerOptions = new MarkerOptions()
-                        .position(decodedPolyline.get(decodedPolyline.size() - 1)) // Last point of the polyline (destination)
-                        .title(destinationName); // Use destinationName passed from autocompleteFragment
-                gMap.addMarker(originMarkerOptions);
-                gMap.addMarker(destinationMarkerOptions);
-
-                // Calculate bounds for the route polyline
-                LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                for (LatLng latLng : decodedPolyline) {
-                    builder.include(latLng);
-                }
-                LatLngBounds bounds = builder.build();
-
-                // Zoom out to encompass the entire route
-                int padding = 150; // Padding in pixels
-                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, padding);
-                gMap.animateCamera(cameraUpdate);
-            }
+        // Pass route data back to MapActivity for UI updates
+        if (mapActivity != null) {
+            mapActivity.onRouteObtained(decodedPolylines, routeNames, routeTimes, routeDistances);
         }
     }
+
+
 
 
 
