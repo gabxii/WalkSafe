@@ -83,6 +83,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private LinearLayout overallsafetyLayout;
     private LinearLayout bottomSheetLayout;
     private LinearLayout routesContainer;
+    private LinearLayout routesLayout;
     private ScrollView routesScrollView;
     private BottomSheetBehavior bottomSheetBehavior;
 
@@ -112,6 +113,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private int cctvCount = 0;
     private int policeCount = 0;
     private int streetlightCount = 0;
+    private String routeName = "";
 
 
 
@@ -153,8 +155,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         bottomSheetLayout = findViewById(R.id.metricsLinearLayout);
         routesContainer = findViewById(R.id.routesContainer);
         routesScrollView = findViewById(R.id.routesScrollView);
-
-//        ProgressBar progressBarButton = findViewById(R.id.progressBarButton);
+        routesLayout = findViewById(R.id.routes_Layout);
         overallsafetyLayout = findViewById(R.id.overallsafety_Layout);
 
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
@@ -169,12 +170,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         policeCountTextView = findViewById(R.id.policeCountTextView);
         streetlightProgressBar = findViewById(R.id.streetlightProgressBar);
         streetlightTextView = findViewById(R.id.streetlightCountTextView);
-        overallsafetyProgressBar = findViewById(R.id.overallsafetyProgressBar);
-        overallsafetyTextView = findViewById(R.id.overallsafetyCountTextView);
+        overallsafetyProgressBar = routesContainer.findViewById(R.id.overallsafetyProgressBar);
+        overallsafetyTextView = routesContainer.findViewById(R.id.overallsafetyCountTextView);
         routeNameTextView = bottomSheet.findViewById(R.id.routeNameTextView);
         routeTimeTextView = bottomSheet.findViewById(R.id.routeTimeTextView);
         routeDistanceTextView = bottomSheet.findViewById(R.id.routeDistanceTextView);
-        arrow = findViewById(R.id.arrow);
+        arrow = routesContainer.findViewById(R.id.arrow);
 
         ArrayList<LatLng> polylinePoints = new ArrayList<>();
 
@@ -192,21 +193,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             Log.e(TAG, "startNavigationButton is null. Check your layout or ID.");
         }
 
-        // Set click listener for progress bar
-//        progressBarButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                navigateToMetrics();
-//            }
-//        });
-
-        // Set click listener for arrow
-//        arrow.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                navigateToMetrics();
-//            }
-//        });
 
         // Set bottom sheet callback
         bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
@@ -224,24 +210,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 // Optionally, handle slide offset if needed
             }
         });
-    }
-
-
-    private void navigateToMetrics() {
-        Intent intent = new Intent(MapActivity.this, MetricsActivity.class);
-        intent.putExtra("crimeCount", crimeCount); // Replace with your actual data
-        intent.putExtra("cctvCount", cctvCount);
-        intent.putExtra("policeCount", policeCount);
-        intent.putExtra("streetlightCount", streetlightCount);
-        startActivity(intent);
-
-
-        // Example: Passing route data as an extra
-        if (route != null && !route.isEmpty()) {
-            intent.putParcelableArrayListExtra("route", (ArrayList<LatLng>) route);
-        }
-
-        startActivity(intent);
     }
 
 
@@ -357,6 +325,37 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 routeTimeTextView.setText(routeTimes.get(i));
                 routeDistanceTextView.setText(routeDistances.get(i));
 
+                // Fetch and display additional data
+                fetchCrimeData(route, i); // Example method to fetch crime count
+                fetchCCTVData(route, i); // Example method to fetch CCTV count
+                fetchPoliceData(route, i); // Example method to fetch police count
+                fetchStreetlightData(route, i); // Example method to fetch streetlight count
+
+                // Find views in the inflated layout for this route
+                ProgressBar progressBar = routeView.findViewById(R.id.overallsafetyProgressBar);
+                ImageView arrow = routeView.findViewById(R.id.arrow);
+
+                // Set tags for identification
+                progressBar.setTag(i);
+                arrow.setTag(i);
+
+                // Set click listeners for progress bar and arrow
+                progressBar.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        int routeIndex = (int) v.getTag();
+                        navigateToMetrics(routeIndex, routeNames.get(routeIndex), crimeCount, cctvCount, policeCount, streetlightCount);
+                    }
+                });
+
+                arrow.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        int routeIndex = (int) v.getTag();
+                        navigateToMetrics(routeIndex, routeNames.get(routeIndex), crimeCount, cctvCount, policeCount, streetlightCount);
+                    }
+                });
+
                 // Add the new route view to the container
                 routesContainer.addView(routeView);
             }
@@ -370,58 +369,20 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
-
-
-
-
-
-
-
-
-
-    private void addRouteItems() {
-        // Example code to add routes dynamically
-        for (int i = 0; i < 2; i++) {
-            View routeView = getLayoutInflater().inflate(R.layout.routes_layout, routesContainer, false);
-            TextView routeNameTextView = routeView.findViewById(R.id.routeNameTextView);
-            TextView routeTimeTextView = routeView.findViewById(R.id.routeTimeTextView);
-            TextView routeDistanceTextView = routeView.findViewById(R.id.routeDistanceTextView);
-
-            routeNameTextView.setText("Route " + (i + 1));
-            routeTimeTextView.setText("Estimated Time: 25 mins");
-            routeDistanceTextView.setText("Distance: 5 km");
-
-            routesContainer.addView(routeView);
-        }
+    // Method to navigate to metrics activity with selected route index and data
+    private void navigateToMetrics(int routeIndex, String routeName, int crimeCount, int cctvCount, int policeCount, int streetlightCount) {
+        // Implement navigation to MetricsActivity passing routeIndex and data to show relevant metrics
+        Intent intent = new Intent(this, MetricsActivity.class);
+        intent.putExtra("routeName", routeName);
+        intent.putExtra("crimeCount", crimeCount);
+        intent.putExtra("cctvCount", cctvCount);
+        intent.putExtra("policeCount", policeCount);
+        intent.putExtra("streetlightCount", streetlightCount);
+        startActivity(intent);
     }
 
 
 
-
-
-
-//    @Override
-//    public void onPolylineClick(Polyline polyline) {
-//        if (polyline != null && polyline.getTag() != null) {
-//            polyline.setColor(Color.parseColor("#1A73E8"));
-//            zoomToPolyline(polyline);
-//            Toast.makeText(this, polyline.getTag().toString(), Toast.LENGTH_SHORT).show();
-//
-//            // Clear previous data and fetch new data for the clicked polyline
-//            clearMap(); // Clear previous markers and polylines
-//            clearMetrics(); // Clear previous metrics data
-//
-//            // Fetch data for the clicked polyline
-//            fetchCrimeData(polyline.getPoints());
-//            fetchStreetlightData(polyline.getPoints());
-//            fetchPoliceData(polyline.getPoints());
-//            fetchCCTVData(polyline.getPoints());
-//
-//            showBottomSheet(true);
-//        } else {
-//            showBottomSheet(false);
-//        }
-//    }
 
     private void fetchCrimeData(List<LatLng> route, int i) {
         crimeData.fetchCrimeData(route, new CrimeData.CrimeDataCallback() {

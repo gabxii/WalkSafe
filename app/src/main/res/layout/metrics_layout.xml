@@ -54,7 +54,7 @@
 
     <!-- Dynamic Title -->
     <TextView
-        android:id="@+id/dynamicTitle"
+        android:id="@+id/metricsRouteTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
@@ -76,7 +76,7 @@
         android:gravity="center_vertical"
         android:paddingRight="24dp"
         android:paddingLeft="24dp"
-        app:layout_constraintTop_toBottomOf="@id/dynamicTitle"
+        app:layout_constraintTop_toBottomOf="@id/metricsRouteTitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 

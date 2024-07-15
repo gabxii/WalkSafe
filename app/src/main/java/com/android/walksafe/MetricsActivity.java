@@ -23,8 +23,7 @@ public class MetricsActivity extends AppCompatActivity {
     private TextView policeCountTextView;
     private ProgressBar streetlightProgressBar;
     private TextView streetlightCountTextView;
-    private ProgressBar overallsafetyProgressBar;
-    private TextView overallsafetyCountTextView;
+    private TextView metricsRouteTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +39,7 @@ public class MetricsActivity extends AppCompatActivity {
         policeCountTextView = findViewById(R.id.policeCountTextView);
         streetlightProgressBar = findViewById(R.id.streetlightProgressBar);
         streetlightCountTextView = findViewById(R.id.streetlightCountTextView);
+        metricsRouteTitle = findViewById(R.id.metricsRouteTitle);
 
         // Initialize back button
         ImageButton backButton = findViewById(R.id.backButton);
@@ -53,29 +53,36 @@ public class MetricsActivity extends AppCompatActivity {
         // Retrieve intent extras
         Intent intent = getIntent();
         if (intent != null) {
-            Bundle extras = intent.getExtras();
-            if (extras != null) {
-                int crimeCount = extras.getInt("crimeCount", 0);
-                int cctvCount = extras.getInt("cctvCount", 0);
-                int policeCount = extras.getInt("policeCount", 0);
-                int streetlightCount = extras.getInt("streetlightCount", 0);
+            // Retrieve metrics counts for the selected route
+            String routeName = intent.getStringExtra("routeName");
+            int crimeCount = intent.getIntExtra("crimeCount", 0);
+            int cctvCount = intent.getIntExtra("cctvCount", 0);
+            int policeCount = intent.getIntExtra("policeCount", 0);
+            int streetlightCount = intent.getIntExtra("streetlightCount", 0);
 
-                // Update UI with retrieved counts
-                updateCrimeCount(crimeCount);
-                updateCCTVCount(cctvCount);
-                updatePoliceCount(policeCount);
-                updateStreetlightCount(streetlightCount);
+            // Update UI with retrieved counts
+            updateRouteTitle(routeName);
+            updateCrimeCount(crimeCount);
+            updateCCTVCount(cctvCount);
+            updatePoliceCount(policeCount);
+            updateStreetlightCount(streetlightCount);
 
-            } else {
-                Log.e(TAG, "Intent extras are null");
-                Toast.makeText(this, "Failed to retrieve data", Toast.LENGTH_SHORT).show();
-                finish(); // Close activity if data retrieval fails
-            }
         } else {
             Log.e(TAG, "Intent is null");
             Toast.makeText(this, "Intent is null", Toast.LENGTH_SHORT).show();
             finish(); // Close activity if intent is null
         }
+    }
+
+    // Method to retrieve crime count for selected route
+    private int getCrimeCountForRoute(int routeIndex) {
+        // Replace with actual implementation to fetch crime count for routeIndex
+        // Example: return crimeCounts.get(routeIndex);
+        return getCrimeCountForRoute(0); // Example value
+    }
+
+    public void updateRouteTitle(String routeName) {
+        metricsRouteTitle.setText(routeName);
     }
 
     // Update crime count UI
@@ -100,26 +107,5 @@ public class MetricsActivity extends AppCompatActivity {
     public void updateStreetlightCount(int count) {
         streetlightCountTextView.setText(String.valueOf(count));
         streetlightProgressBar.setProgress(count);
-    }
-
-    // Update overall safety index UI
-    public void updateOverallSafetyIndex(int index) {
-        overallsafetyCountTextView.setText(String.valueOf(index));
-        overallsafetyProgressBar.setProgress(index);
-
-        // Adjust color based on safety index
-        if (index < 10) {
-            setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor);
-        } else if (index < 15) {
-            setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor);
-        } else {
-            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor);
-        }
-    }
-
-    // Helper method to set progress bar color dynamically
-    private void setProgressBarColor(ProgressBar progressBar, int colorRes) {
-        int color = getResources().getColor(colorRes);
-        progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(color));
     }
 }
