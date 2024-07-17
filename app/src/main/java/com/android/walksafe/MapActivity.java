@@ -78,7 +78,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private CCTVData cctvData;
     private PoliceStationData policeStationData;
     private StreetlightData streetlightData;
-//    private SafetyIndex safetyIndex;
+    private SafetyIndex safetyIndex;
 
     private View bottomSheet;
 
@@ -106,8 +106,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     private List<List<LatLng>> decodedPolylines;
 
-
-    private ProgressBar progressBar;
     private ImageView arrow;
 
     // Declare count variables
@@ -118,7 +116,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private String routeName = "";
     private List<String> routeTimes;
     private List<String> routeDistances;
+    private List<String> routeNames;
+    private List<List<LatLng>> routes;
     private int clickedRouteIndex = -1;
+
 
 
     @Override
@@ -151,8 +152,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         policeStationData = new PoliceStationData(this, gMap);
         streetlightData = new StreetlightData(this, gMap);
 
-        // Initialize Safety Index
-//        safetyIndex = new SafetyIndex(this, gMap);
+        //Initialize Safety Index
+        safetyIndex = new SafetyIndex(this, gMap);
 
         // Find views
         bottomSheet = findViewById(R.id.bottomSheetLinearLayout);
@@ -297,8 +298,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     // Show obtained Route
     // Define class-level fields
-    private List<String> routeNames;
-    private List<List<LatLng>> routes;
+
 
     public void onRouteObtained(List<List<LatLng>> routes, List<String> routeNames, List<String> routeTimes, List<String> routeDistances) {
         this.routes = routes; // Assign routes to class-level variable
@@ -379,6 +379,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
                 // Add the new route view to the container
                 routesContainer.addView(routeView);
+
+                // Calculate safety index asynchronously and update progress bar
+                calculateSafetyIndex(route, i);
             }
 
             // Show the bottom sheet and update UI
@@ -389,6 +392,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             Toast.makeText(this, "Failed to obtain route or route details", Toast.LENGTH_SHORT).show();
         }
     }
+
+
 
     // Method to handle route container click
     private void onRouteContainerClicked(int routeIndex) {
@@ -406,7 +411,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
 
         View clickedView = routesContainer.getChildAt(routeIndex);
-        clickedView.setBackgroundColor(ContextCompat.getColor(this, R.color.ucGreen200));
+        clickedView.setBackgroundColor(ContextCompat.getColor(this, R.color.secondary100));
         clickedRouteIndex = routeIndex; // Update clicked route index
 
         // Change polyline color and Z-index for the clicked route
@@ -448,6 +453,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         navigateToMetrics(routeIndex, routeName, crimeCount, cctvCount, policeCount, streetlightCount);
     }
 
+
     // Method to navigate to metrics activity with selected route index and data
     private void navigateToMetrics(int routeIndex, String routeName, int crimeCount, int cctvCount, int policeCount, int streetlightCount) {
         // Implement navigation to MetricsActivity passing routeIndex and data to show relevant metrics
@@ -461,6 +467,30 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
+    private void calculateSafetyIndex(List<LatLng> route, int routeIndex) {
+        // Fetch safety metrics asynchronously for the given route
+        safetyIndex.fetchSafetyMetrics(route, new SafetyIndex.SafetyIndexCallback() {
+            @Override
+            public void onSafetyIndexCalculated(double safetyIndex) {
+                // Update UI with safety index for this route
+                ProgressBar overallsafetyProgressBar = routesContainer.getChildAt(routeIndex).findViewById(R.id.overallsafetyProgressBar);
+                TextView overallsafetyCountTextView = routesContainer.getChildAt(routeIndex).findViewById(R.id.overallsafetyCountTextView);
+                overallsafetyCountTextView.setText(String.valueOf(safetyIndex));
+                int progress = (int) Math.round(safetyIndex);
+                overallsafetyProgressBar.setProgress(progress);
+
+                // Set custom progress drawable based on safety index
+                if (progress < 10) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor);
+                } else if (progress < 15) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor);
+                } else {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor);
+                }
+            }
+        });
+    }
+
 
     private int fetchCrimeData(List<LatLng> route, int i) {
 
@@ -469,7 +499,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             public void onCrimeDataReceived( int count) {
                 Log.d(TAG, "CCTV data received: " + count);
                 crimeCount = count; // Update cctvCount variable
-                updateMetricsActivityCCTVCount(count);
+                updateMetricsActivityCrimeCount(count);
             }
         });
         return crimeCount;
@@ -539,8 +569,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-    public void updateBottomSheetOverallCount(int count) {
-        TextView overallsafetyCountTextView = overallsafetyLayout.findViewById(R.id.overallsafetyCountTextView);
+    public void updateBottomSheetOverallCount(double count) {
+        TextView overallsafetyCountTextView = routesLayout.findViewById(R.id.overallsafetyCountTextView);
         Log.d(TAG, "CCTV Count: " + count); // Log count for debugging
         overallsafetyCountTextView.setText(String.valueOf(count)); // Convert count to String
 
@@ -554,7 +584,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
 
         // Update progress bar value
-        overallsafetyProgressBar.setProgress(count);
+        overallsafetyProgressBar.setProgress((int) count);
     }
 
 

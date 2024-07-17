@@ -13,10 +13,22 @@ public class SafetyIndex {
     private PoliceStationData policeStationData;
     private StreetlightData streetlightData;
 
-    private int crimeCount;
-    private int cctvCount;
-    private int policeCount;
-    private int streetlightCount;
+    private int crimeCount = -1;
+    private int cctvCount = -1;
+    private int policeCount = -1;
+    private int streetlightCount = -1;
+
+    // Maximum counts for normalization (adjust these values based on your data)
+    private static final int MAX_CRIME_COUNT = 1000;
+    private static final int MAX_CCTV_COUNT = 500;
+    private static final int MAX_POLICE_COUNT = 100;
+    private static final int MAX_STREETLIGHT_COUNT = 800;
+
+    // Weights for each metric
+    private static final double WEIGHT_CRIME = 0.4;
+    private static final double WEIGHT_CCTV = 0.3;
+    private static final double WEIGHT_POLICE = 0.2;
+    private static final double WEIGHT_STREETLIGHT = 0.1;
 
     public SafetyIndex(Context context, GoogleMap googleMap) {
         this.context = context;
@@ -65,9 +77,17 @@ public class SafetyIndex {
     private void calculateSafetyIndex(SafetyIndexCallback callback) {
         // Check if all data counts are available
         if (crimeCount >= 0 && cctvCount >= 0 && policeCount >= 0 && streetlightCount >= 0) {
-            // Calculate safety index (Example calculation)
-            // Adjust your formula based on your application's specific logic
-            double safetyIndex = 100 - (crimeCount * 0.2 + cctvCount * 0.3 + policeCount * 0.1 + streetlightCount * 0.4);
+            // Normalize counts
+            double normalizedCrimeCount = (double) crimeCount / MAX_CRIME_COUNT;
+            double normalizedCCTVCount = (double) cctvCount / MAX_CCTV_COUNT;
+            double normalizedPoliceCount = (double) policeCount / MAX_POLICE_COUNT;
+            double normalizedStreetlightCount = (double) streetlightCount / MAX_STREETLIGHT_COUNT;
+
+            // Calculate safety index
+            double safetyIndex = 100 * (1 - (WEIGHT_CRIME * normalizedCrimeCount +
+                    WEIGHT_CCTV * normalizedCCTVCount +
+                    WEIGHT_POLICE * normalizedPoliceCount +
+                    WEIGHT_STREETLIGHT * normalizedStreetlightCount));
 
             // Pass safety index to callback method
             callback.onSafetyIndexCalculated(safetyIndex);
