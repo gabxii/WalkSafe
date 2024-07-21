@@ -1,14 +1,15 @@
 package com.android.walksafe;
 
-import static java.security.AccessController.getContext;
-
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.location.Location;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -28,19 +29,21 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
@@ -49,7 +52,14 @@ import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 
-import java.security.AccessController;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -120,7 +130,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private List<List<LatLng>> routes;
     private int clickedRouteIndex = -1;
 
-
+    private LocationCallback locationCallback; // Declare here
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,18 +195,27 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         ArrayList<LatLng> polylinePoints = new ArrayList<>();
 
 
-        // Example of setting click listener on a button
+        // Real-time Navigation
         Button startNavigationButton = findViewById(R.id.startNavigationButton);
-        if (startNavigationButton != null) {
-            startNavigationButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    // Handle button click event
+        startNavigationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (clickedRouteIndex != -1) {
+                    List<LatLng> route = routes.get(clickedRouteIndex);
+                    if (route != null && !route.isEmpty()) {
+                        // Pass the route to start real-time street view navigation
+                        startRealTimeStreetViewNavigation(route);
+                    } else {
+                        Toast.makeText(MapActivity.this, "Route is not valid", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(MapActivity.this, "Please select a route first", Toast.LENGTH_SHORT).show();
                 }
-            });
-        } else {
-            Log.e(TAG, "startNavigationButton is null. Check your layout or ID.");
-        }
+            }
+        });
+
+
+
 
 
         // Set bottom sheet callback
@@ -234,13 +253,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
-
     private void moveBottomSheetMapDown() {
-        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) findViewById(R.id.mapCardView).getLayoutParams();
+        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) mapCardView.getLayoutParams();
         params.bottomMargin = 0;
-        findViewById(R.id.mapCardView).setLayoutParams(params);
-
+        mapCardView.setLayoutParams(params);
     }
+
 
 
     private void initializePlaces() {
@@ -296,10 +314,129 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
+
+    private void startRealTimeStreetViewNavigation(List<LatLng> route) {
+        if (route != null && !route.isEmpty()) {
+            // Use the starting point of the route for Street View
+            LatLng startPoint = route.get(0);
+            String uri = String.format("google.streetview:cbll=%f,%f", startPoint.latitude, startPoint.longitude);
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
+            intent.setPackage("com.google.android.apps.maps");
+
+            // Start the intent to launch Google Maps in Street View
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+            } else {
+                Toast.makeText(this, "Google Maps is not installed", Toast.LENGTH_SHORT).show();
+            }
+
+            // Also, show the route with directions on the map
+            // Call this after starting Street View to ensure the map is ready
+            showDirectionsOnMap(route);
+        } else {
+            Toast.makeText(this, "Invalid route for Street View", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showDirectionsOnMap(List<LatLng> route) {
+        String url = getDirectionsUrl(route);
+        new FetchUrl().execute(url);
+    }
+
+    private String getDirectionsUrl(List<LatLng> route) {
+        StringBuilder urlString = new StringBuilder("https://maps.googleapis.com/maps/api/directions/json?");
+        urlString.append("origin=").append(route.get(0).latitude).append(",").append(route.get(0).longitude);
+        urlString.append("&destination=").append(route.get(route.size() - 1).latitude).append(",").append(route.get(route.size() - 1).longitude);
+        urlString.append("&waypoints=");
+        for (int i = 1; i < route.size() - 1; i++) {
+            urlString.append(route.get(i).latitude).append(",").append(route.get(i).longitude);
+            if (i < route.size() - 2) {
+                urlString.append("|");
+            }
+        }
+        urlString.append("&key=").append(getString(R.string.api_key)); // Your API key
+        return urlString.toString();
+    }
+
+    private class FetchUrl extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... url) {
+            // Fetch data from URL
+            String data = "";
+            try {
+                URL urlObj = new URL(url[0]);
+                HttpURLConnection urlConnection = (HttpURLConnection) urlObj.openConnection();
+                InputStream inputStream = urlConnection.getInputStream();
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+                StringBuilder stringBuilder = new StringBuilder();
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line).append("\n");
+                }
+                bufferedReader.close();
+                data = stringBuilder.toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return data;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            // Parse the result and display directions
+            parseDirections(result);
+        }
+    }
+
+    private void parseDirections(String jsonData) {
+        // Parse the JSON response and draw the route on the map
+        try {
+            JSONObject jsonObject = new JSONObject(jsonData);
+            JSONArray routes = jsonObject.getJSONArray("routes");
+            if (routes.length() > 0) {
+                JSONObject route = routes.getJSONObject(0);
+                JSONObject overviewPolyline = route.getJSONObject("overview_polyline");
+                String points = overviewPolyline.getString("points");
+                List<LatLng> decodedPath = decodePoly(points);
+                gMap.addPolyline(new PolylineOptions().addAll(decodedPath).width(12).color(Color.BLUE));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private List<LatLng> decodePoly(String encoded) {
+        List<LatLng> poly = new ArrayList<>();
+        int index = 0, len = encoded.length();
+        int lat = 0, lng = 0;
+
+        while (index < len) {
+            int b, shift = 0, result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lat += dlat;
+            shift = 0;
+            result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lng += dlng;
+            LatLng p = new LatLng((((lat * 1E-5))), (((lng * 1E-5))));
+            poly.add(p);
+        }
+        return poly;
+    }
+
+
+
     // Show obtained Route
-    // Define class-level fields
-
-
     public void onRouteObtained(List<List<LatLng>> routes, List<String> routeNames, List<String> routeTimes, List<String> routeDistances) {
         this.routes = routes; // Assign routes to class-level variable
         this.routeNames = routeNames; // Assign routeNames to class-level variable
@@ -433,29 +570,33 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             gMap.animateCamera(cameraUpdate);
         }
 
-        // Optionally, perform other actions like navigating to another screen
+        // Enable the start navigation button
+        Button startNavigationButton = findViewById(R.id.startNavigationButton);
+        startNavigationButton.setEnabled(true); // Enable the button
     }
-
 
 
 
     // Method to handle progress bar or arrow click
     private void onButtonClicked(int routeIndex) {
+
         // Fetch data based on the clicked route index
-        // Example: Fetch crime, CCTV, police, streetlight data for the selected routeIndex
         String routeName = routeNames.get(routeIndex);
         int crimeCount = fetchCrimeData(routes.get(routeIndex), routeIndex);
         int cctvCount = fetchCCTVData(routes.get(routeIndex), routeIndex);
         int policeCount = fetchPoliceData(routes.get(routeIndex), routeIndex);
         int streetlightCount = fetchStreetlightData(routes.get(routeIndex), routeIndex);
 
+        SafetyIndex safetyIndex = new SafetyIndex(crimeCount, cctvCount, policeCount, streetlightCount);
+        int safetyIndexValue = calculateSafetyIndex(routes.get(routeIndex), routeIndex); // Ensure correct index
+
         // Navigate to MetricsActivity with the fetched data
-        navigateToMetrics(routeIndex, routeName, crimeCount, cctvCount, policeCount, streetlightCount);
+        navigateToMetrics(routeIndex, routeName, crimeCount, cctvCount, policeCount, streetlightCount, safetyIndexValue);
     }
 
 
     // Method to navigate to metrics activity with selected route index and data
-    private void navigateToMetrics(int routeIndex, String routeName, int crimeCount, int cctvCount, int policeCount, int streetlightCount) {
+    private void navigateToMetrics(int routeIndex, String routeName, int crimeCount, int cctvCount, int policeCount, int streetlightCount, double safetyIndexValue){
         // Implement navigation to MetricsActivity passing routeIndex and data to show relevant metrics
         Intent intent = new Intent(this, MetricsActivity.class);
         intent.putExtra("routeName", routeName);
@@ -463,11 +604,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         intent.putExtra("cctvCount", cctvCount);
         intent.putExtra("policeCount", policeCount);
         intent.putExtra("streetlightCount", streetlightCount);
+        intent.putExtra("safetyIndex", safetyIndexValue);
+
+        // Assuming you calculate progress here based on safetyIndexValue or another logic
+        int progress = (int) Math.round(safetyIndexValue); // Example calculation
+        intent.putExtra("progress", progress);
         startActivity(intent);
     }
 
 
-    private void calculateSafetyIndex(List<LatLng> route, int routeIndex) {
+    private int calculateSafetyIndex(List<LatLng> route, int routeIndex) {
         // Fetch safety metrics asynchronously for the given route
         safetyIndex.fetchSafetyMetrics(route, new SafetyIndex.SafetyIndexCallback() {
             @Override
@@ -480,15 +626,30 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 overallsafetyProgressBar.setProgress(progress);
 
                 // Set custom progress drawable based on safety index
-                if (progress < 10) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor);
-                } else if (progress < 15) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor);
+                if (progress > 91) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor90);
+                } else if (progress < 90 || progress > 81) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor80);
+                } else if (progress < 80 || progress > 71) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor70);
+                } else if (progress < 70 || progress > 61) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor60);
+                } else if (progress < 60 || progress > 51) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor50);
+                } else if (progress < 50 || progress > 41) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor40);
+                } else if (progress < 40 || progress > 31) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor30);
+                } else if (progress < 30 || progress > 21) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor20);
+                } else if (progress < 20 || progress > 11) {
+                    setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor10);
                 } else {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor);
+                    setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor0);
                 }
             }
         });
+        return routeIndex;
     }
 
 
@@ -569,26 +730,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-    public void updateBottomSheetOverallCount(double count) {
-        TextView overallsafetyCountTextView = routesLayout.findViewById(R.id.overallsafetyCountTextView);
-        Log.d(TAG, "CCTV Count: " + count); // Log count for debugging
-        overallsafetyCountTextView.setText(String.valueOf(count)); // Convert count to String
-
-        // Adjust color based on count
-        if (count < 10) {
-            setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor);
-        } else if (count < 15) {
-            setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor);
-        } else {
-            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor);
-        }
-
-        // Update progress bar value
-        overallsafetyProgressBar.setProgress((int) count);
-    }
-
-
-
     // Helper method to set progress bar color dynamically
     private void setProgressBarColor(ProgressBar progressBar, int colorRes) {
         int color = ContextCompat.getColor(this, colorRes);
@@ -621,6 +762,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
+
     // Helper method to zoom to clicked polyline
     private void zoomToPolyline(Polyline polyline) {
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
@@ -642,7 +784,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     // Request User Location
     private void getLocationPermission() {
-        if (ActivityCompat.checkSelfPermission(this.getApplicationContext(),
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             locationPermissionGranted = true;
@@ -665,39 +807,43 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             } else {
                 gMap.setMyLocationEnabled(false);
                 gMap.getUiSettings().setMyLocationButtonEnabled(false);
+                lastKnownLocation = null;
+                getLocationPermission();
             }
-        } catch (SecurityException e) {
-            e.printStackTrace();
+        } catch (SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage());
         }
     }
+
 
     // Zooms in for Current User Location
     private void getCurrentLocation() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        Task<Location> task = fusedLocationProviderClient.getLastLocation();
-
-        task.addOnSuccessListener(new OnSuccessListener<Location>() {
-            @Override
-            public void onSuccess(Location location) {
-                if (location != null) {
-                    lastKnownLocation = location; // Store the user's last known location
-                    LatLng latlng = new LatLng(location.getLatitude(), location.getLongitude());
-
-                    Log.d("CurrentLocation", "Latitude: " + location.getLatitude() + ", Longitude: " + location.getLongitude());
-                    MarkerOptions markerOptions = new MarkerOptions()
-                            .position(latlng)
-                            .icon(BitmapDescriptorFactory.defaultMarker(210))
-                            .title("Current Location");
-
-                    gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 20));
-                    gMap.addMarker(markerOptions).showInfoWindow();
-                }
+        try {
+            if (locationPermissionGranted) {
+                Task<Location> locationResult = fusedLocationProviderClient.getLastLocation();
+                locationResult.addOnCompleteListener(this, new OnCompleteListener<Location>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Location> task) {
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            lastKnownLocation = task.getResult();
+                            gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                                    new LatLng(lastKnownLocation.getLatitude(),
+                                            lastKnownLocation.getLongitude()), 15));
+                        } else {
+                            Log.d(TAG, "Current location is null. Using defaults.");
+                            Log.e(TAG, "Exception: %s", task.getException());
+                            gMap.moveCamera(CameraUpdateFactory
+                                    .newLatLngZoom(defaultLocation, 15));
+                            gMap.getUiSettings().setMyLocationButtonEnabled(false);
+                        }
+                    }
+                });
             }
-        });
+        } catch (SecurityException e) {
+            Log.e("Exception: %s", e.getMessage(), e);
+        }
     }
+
 
     // User Location Approval
     @Override
@@ -707,11 +853,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         locationPermissionGranted = false;
         if (requestCode == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 locationPermissionGranted = true;
             }
         }
         updateLocationUI();
+        getCurrentLocation();
     }
 
 
