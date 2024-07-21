@@ -1,109 +1,100 @@
-<!--<?xml version="1.0" encoding="utf-8"?>-->
-<!--<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
-<!--    xmlns:tools="http://schemas.android.com/tools"-->
-<!--    android:layout_width="match_parent"-->
-<!--    android:layout_height="match_parent"-->
-<!--    android:background="#FEFEFE"-->
-<!--    tools:context=".SplashActivity">-->
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/light300"
+    tools:context=".SplashActivity">
 
-<!--    &lt;!&ndash;Welcome&ndash;&gt;-->
-<!--    <TextView-->
-<!--        android:id="@+id/welcome"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:fontFamily="@font/neuehaasdisplayroman"-->
-<!--        android:text="Welcome to"-->
-<!--        android:textColor="#202020"-->
-<!--        android:textSize="13sp"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toTopOf="parent"-->
-<!--        app:layout_constraintVertical_bias="0.071" />-->
+    <!-- Background Images -->
+    <ImageView
+        android:id="@+id/ucLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/uc_logo"
+        android:alpha="0.2"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true" />
 
-<!--    &lt;!&ndash;    Main Title&ndash;&gt;-->
-<!--    <TextView-->
-<!--        android:id="@+id/spree"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:fontFamily="@font/neuehaasdisplayblack"-->
-<!--        android:text="SPREE"-->
-<!--        android:textColor="#202020"-->
-<!--        android:textSize="90sp"-->
-<!--        android:textStyle="bold"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toTopOf="parent"-->
-<!--        app:layout_constraintVertical_bias="0.11" />-->
+    <ImageView
+        android:id="@+id/citcsLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/citcs_logo"
+        android:alpha="0.2"
+        android:layout_marginEnd="-20dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true" />
 
-<!--    &lt;!&ndash;    Title&ndash;&gt;-->
-<!--    <TextView-->
-<!--        android:id="@+id/spreelong"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:fontFamily="@font/neuehaasdisplayblack"-->
-<!--        android:text="Safety-Powered Route Exploration and Enforcement"-->
-<!--        android:textColor="#202020"-->
-<!--        android:textSize="11.5sp"-->
-<!--        android:textStyle="bold"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintHorizontal_bias="0.5"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toTopOf="parent"-->
-<!--        app:layout_constraintVertical_bias="0.25" />-->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_centerInParent="true"
+        android:gravity="center">
 
-<!--    &lt;!&ndash;SPREE Logo&ndash;&gt;-->
-<!--    <ImageView-->
-<!--        android:id="@+id/logo"-->
-<!--        android:layout_width="301sp"-->
-<!--        android:layout_height="260sp"-->
-<!--        android:src="@drawable/logo2"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintHorizontal_bias="0.492"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toTopOf="parent"-->
-<!--        app:layout_constraintVertical_bias="0.499" />-->
+        <!-- Logo -->
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:src="@drawable/walksafe_logo"
+            android:layout_marginBottom="20dp"/>
 
-<!--    &lt;!&ndash;Begin&ndash;&gt;-->
-<!--    <Button-->
-<!--        android:id="@+id/begin"-->
-<!--        android:layout_width="192dp"-->
-<!--        android:layout_height="57dp"-->
-<!--        android:backgroundTint="#3DA283"-->
-<!--        android:fontFamily="@font/neuehaasdisplaybold"-->
-<!--        android:onClick="beginButtonClicked"-->
-<!--        android:text="Begin"-->
-<!--        android:textColor="#FEFEFE"-->
-<!--        android:textSize="23sp"-->
-<!--        android:textStyle="bold"-->
-<!--        app:cornerRadius="16dp"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintHorizontal_bias="0.498"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toTopOf="parent"-->
-<!--        app:layout_constraintVertical_bias="0.817" />-->
+        <!-- App Name -->
+        <TextView
+            android:id="@+id/appName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="WalkSafe"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:textColor="@color/dark500"
+            android:fontFamily="@font/neuehaasdisplayblack"/>
 
+        <!-- Location -->
+        <TextView
+            android:id="@+id/location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Baguio"
+            android:fontFamily="@font/neuehaasdisplayroman"
+            android:textSize="20sp"
+            android:layout_marginTop="5dp"
+            android:textColor="@color/dark500"/>
+    </LinearLayout>
 
-<!--    &lt;!&ndash;    &lt;!&ndash;    Project&ndash;&gt;&ndash;&gt;-->
-<!--    &lt;!&ndash;    <TextView&ndash;&gt;-->
-<!--    &lt;!&ndash;        android:id="@+id/project"&ndash;&gt;-->
-<!--    &lt;!&ndash;        android:layout_width="wrap_content"&ndash;&gt;-->
-<!--    &lt;!&ndash;        android:layout_height="wrap_content"&ndash;&gt;-->
-<!--    &lt;!&ndash;        android:fontFamily="@font/neuehaasdisplayroman"&ndash;&gt;-->
-<!--    &lt;!&ndash;        android:text="A Thesis Project"&ndash;&gt;-->
-<!--    &lt;!&ndash;        android:textColor="#1C1311"&ndash;&gt;-->
-<!--    &lt;!&ndash;        android:textSize="13sp"&ndash;&gt;-->
-<!--    &lt;!&ndash;        app:layout_constraintBottom_toBottomOf="parent"&ndash;&gt;-->
-<!--    &lt;!&ndash;        app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--    &lt;!&ndash;        app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--    &lt;!&ndash;        app:layout_constraintTop_toTopOf="parent"&ndash;&gt;-->
-<!--    &lt;!&ndash;        app:layout_constraintVertical_bias="0.962" />&ndash;&gt;-->
+    <!-- Slogan and Begin Button Container -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:layout_marginBottom="60dp">
 
+        <!-- Slogan -->
+        <TextView
+            android:id="@+id/slogan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Know Before You Go"
+            android:textSize="14sp"
+            android:fontFamily="@font/neuehaasdisplayroman"
+            android:textStyle="italic"
+            android:textColor="@color/dark500"
+            android:layout_marginBottom="20dp"/>
 
+        <!-- Begin Button -->
+        <Button
+            android:id="@+id/beginButton"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Begin"
+            android:textSize="18sp"
+            android:fontFamily="@font/neuehaasdisplaybold"
+            android:background="@drawable/button_ucgreen"
+            android:textColor="@color/light300"/>
+    </LinearLayout>
 
-<!--</androidx.constraintlayout.widget.ConstraintLayout>-->
+</RelativeLayout>
