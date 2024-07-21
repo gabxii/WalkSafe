@@ -44,6 +44,21 @@ public class SafetyIndex {
         streetlightData = new StreetlightData(context, googleMap);
     }
 
+    // New constructor with counts
+    public SafetyIndex(int crimeCount, int cctvCount, int policeCount, int streetlightCount) {
+        this.crimeCount = crimeCount;
+        this.cctvCount = cctvCount;
+        this.policeCount = policeCount;
+        this.streetlightCount = streetlightCount;
+        // Calculate or initialize safety index here if needed
+    }
+
+    // Method to calculate safety index based on counts
+    public double calculateSafetyIndex() {
+        // Calculation logic here
+        return 0; // Replace with actual calculation
+    }
+
     public void fetchSafetyMetrics(List<LatLng> polylinePoints, SafetyIndexCallback callback) {
         // Initialize counts
         crimeCount = -1;
@@ -119,6 +134,10 @@ public class SafetyIndex {
     // Callback interface for passing safety index value
     public interface SafetyIndexCallback {
         void onSafetyIndexCalculated(double safetyIndex);
+    }
+
+    public void updatePolylineColor(List<LatLng> polylinePoints) {
+
     }
 
 }

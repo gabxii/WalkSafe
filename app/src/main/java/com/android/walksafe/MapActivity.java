@@ -9,13 +9,11 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -30,8 +28,6 @@ import androidx.core.content.ContextCompat;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -40,7 +36,6 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -112,7 +107,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private TextView routeNameTextView;
     private TextView routeTimeTextView;
     private TextView routeDistanceTextView;
-    private ListView listView;
 
     private List<List<LatLng>> decodedPolylines;
 
@@ -573,7 +567,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         // Enable the start navigation button
         Button startNavigationButton = findViewById(R.id.startNavigationButton);
         startNavigationButton.setEnabled(true); // Enable the button
+
+        // Calculate the safety index and update the safety text for the selected route
+        calculateSafetyIndex(routes.get(routeIndex), routeIndex);
     }
+
+
+
 
 
 
@@ -614,43 +614,76 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
     private int calculateSafetyIndex(List<LatLng> route, int routeIndex) {
-        // Fetch safety metrics asynchronously for the given route
         safetyIndex.fetchSafetyMetrics(route, new SafetyIndex.SafetyIndexCallback() {
             @Override
-            public void onSafetyIndexCalculated(double safetyIndex) {
-                // Update UI with safety index for this route
-                ProgressBar overallsafetyProgressBar = routesContainer.getChildAt(routeIndex).findViewById(R.id.overallsafetyProgressBar);
-                TextView overallsafetyCountTextView = routesContainer.getChildAt(routeIndex).findViewById(R.id.overallsafetyCountTextView);
-                overallsafetyCountTextView.setText(String.valueOf(safetyIndex));
-                int progress = (int) Math.round(safetyIndex);
-                overallsafetyProgressBar.setProgress(progress);
+            public void onSafetyIndexCalculated(double safetyIndexValue) {
+                Log.d(TAG, "Safety index calculated: " + safetyIndexValue);
 
-                // Set custom progress drawable based on safety index
-                if (progress > 91) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor90);
-                } else if (progress < 90 || progress > 81) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor80);
-                } else if (progress < 80 || progress > 71) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor70);
-                } else if (progress < 70 || progress > 61) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.safeColor60);
-                } else if (progress < 60 || progress > 51) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor50);
-                } else if (progress < 50 || progress > 41) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor40);
-                } else if (progress < 40 || progress > 31) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor30);
-                } else if (progress < 30 || progress > 21) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor20);
-                } else if (progress < 20 || progress > 11) {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor10);
+                // Ensure the route index is valid and corresponds to the clicked route
+                if (routeIndex >= 0 && routeIndex < routesContainer.getChildCount()) {
+                    // Find the view for this route container
+                    View routeView = routesContainer.getChildAt(routeIndex);
+
+                    // Find the ProgressBar and TextView for this route
+                    ProgressBar overallsafetyProgressBar = routeView.findViewById(R.id.overallsafetyProgressBar);
+                    TextView overallsafetyCountTextView = routeView.findViewById(R.id.overallsafetyCountTextView);
+                    TextView safetyStatusTextView = findViewById(R.id.safetyStatusTextView); // Ensure this ID is correct
+
+                    if (overallsafetyProgressBar != null && overallsafetyCountTextView != null && safetyStatusTextView != null) {
+                        Log.d(TAG, "Updating safety index UI for route index: " + routeIndex);
+
+                        // Update the safety index and progress bar
+                        overallsafetyCountTextView.setText(String.valueOf(safetyIndexValue));
+                        int progress = (int) Math.round(safetyIndexValue);
+                        overallsafetyProgressBar.setProgress(progress);
+
+                        // Set custom progress drawable and safety status based on safety index
+                        if (progress > 91) {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor90);
+                            safetyStatusTextView.setText("Safe to walk alone");
+                        } else if (progress >= 81) {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor80);
+                            safetyStatusTextView.setText("Safe to walk alone");
+                        } else if (progress >= 71) {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor70);
+                            safetyStatusTextView.setText("Safe to walk alone");
+                        } else if (progress >= 61) {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor60);
+                            safetyStatusTextView.setText("Safe to walk alone");
+                        } else if (progress >= 51) {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor50);
+                            safetyStatusTextView.setText("Take transportation");
+                        } else if (progress >= 41) {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor40);
+                            safetyStatusTextView.setText("Take transportation");
+                        } else if (progress >= 31) {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor30);
+                            safetyStatusTextView.setText("Take transportation");
+                        } else if (progress >= 21) {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor20);
+                            safetyStatusTextView.setText("Take transportation");
+                        } else if (progress >= 11) {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor10);
+                            safetyStatusTextView.setText("Take transportation");
+                        } else {
+                            setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor0);
+                            safetyStatusTextView.setText("Take transportation");
+                        }
+                    } else {
+                        Log.e(TAG, "Failed to find one or more views for route index: " + routeIndex);
+                    }
                 } else {
-                    setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor0);
+                    Log.e(TAG, "Invalid route index: " + routeIndex);
                 }
             }
         });
         return routeIndex;
     }
+
+
+
+
+
 
 
     private int fetchCrimeData(List<LatLng> route, int i) {
