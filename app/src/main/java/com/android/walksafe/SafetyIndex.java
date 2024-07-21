@@ -1,6 +1,8 @@
 package com.android.walksafe;
 
 import android.content.Context;
+import android.util.Log;
+
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import java.util.List;
@@ -13,22 +15,25 @@ public class SafetyIndex {
     private PoliceStationData policeStationData;
     private StreetlightData streetlightData;
 
-    private int crimeCount = -1;
-    private int cctvCount = -1;
-    private int policeCount = -1;
-    private int streetlightCount = -1;
+    private int crimeCount = 0;
+    private int cctvCount = 0;
+    private int policeCount = 0;
+    private int streetlightCount = 0;
+
 
     // Maximum counts for normalization (adjust these values based on your data)
-    private static final int MAX_CRIME_COUNT = 1000;
-    private static final int MAX_CCTV_COUNT = 500;
-    private static final int MAX_POLICE_COUNT = 100;
-    private static final int MAX_STREETLIGHT_COUNT = 800;
+    private static final int MAX_CRIME_COUNT = 411;
+    private static final int MAX_CCTV_COUNT = 45;
+    private static final int MAX_POLICE_COUNT = 7;
+    private static final int MAX_STREETLIGHT_COUNT = 354;
 
     // Weights for each metric
     private static final double WEIGHT_CRIME = 0.4;
-    private static final double WEIGHT_CCTV = 0.3;
-    private static final double WEIGHT_POLICE = 0.2;
+    private static final double WEIGHT_CCTV = 0.2;
+    private static final double WEIGHT_POLICE = 0.3;
     private static final double WEIGHT_STREETLIGHT = 0.1;
+
+
 
     public SafetyIndex(Context context, GoogleMap googleMap) {
         this.context = context;
@@ -40,6 +45,12 @@ public class SafetyIndex {
     }
 
     public void fetchSafetyMetrics(List<LatLng> polylinePoints, SafetyIndexCallback callback) {
+        // Initialize counts
+        crimeCount = -1;
+        cctvCount = -1;
+        policeCount = -1;
+        streetlightCount = -1;
+
         // Fetch safety metrics asynchronously
         crimeData.fetchCrimeData(polylinePoints, new CrimeData.CrimeDataCallback() {
             @Override
@@ -74,7 +85,14 @@ public class SafetyIndex {
         });
     }
 
+
     private void calculateSafetyIndex(SafetyIndexCallback callback) {
+        // Debug log
+        Log.d("SafetyIndex", "CrimeCount: " + crimeCount);
+        Log.d("SafetyIndex", "CCTVCount: " + cctvCount);
+        Log.d("SafetyIndex", "PoliceCount: " + policeCount);
+        Log.d("SafetyIndex", "StreetlightCount: " + streetlightCount);
+
         // Check if all data counts are available
         if (crimeCount >= 0 && cctvCount >= 0 && policeCount >= 0 && streetlightCount >= 0) {
             // Normalize counts
@@ -89,13 +107,18 @@ public class SafetyIndex {
                     WEIGHT_POLICE * normalizedPoliceCount +
                     WEIGHT_STREETLIGHT * normalizedStreetlightCount));
 
-            // Pass safety index to callback method
-            callback.onSafetyIndexCalculated(safetyIndex);
+            // Format the safety index to 2 decimal places
+            String formattedSafetyIndex = String.format("%.2f", safetyIndex);
+            double roundedSafetyIndex = Double.parseDouble(formattedSafetyIndex);
+
+            callback.onSafetyIndexCalculated(roundedSafetyIndex);
         }
     }
+
 
     // Callback interface for passing safety index value
     public interface SafetyIndexCallback {
         void onSafetyIndexCalculated(double safetyIndex);
     }
+
 }
