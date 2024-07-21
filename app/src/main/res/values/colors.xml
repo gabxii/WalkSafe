@@ -1,12 +1,29 @@
 <!-- res/values/colors.xml -->
 <resources>
-    <color name="colorProgress">#3B5998</color>
-    <color name="safeColor">#6CA867</color> <!-- Green color for safe condition -->
-    <color name="mediumColor">#EDCD57</color> <!-- Yellow color for moderate condition -->
-    <color name="dangerColor">#E2635E</color> <!-- Red color for dangerous condition -->
+    <color name="polylineColor">#507DDD</color>
+
+    <!-- Theme Colors -->
     <color name="ucGreen400">#345B33</color>
     <color name="ucGreen200">#8AA18A</color>
+    <color name="secondary100">#D0E0CE</color>
     <color name="dark500">#1C1311</color>
     <color name="light300">#F9F9F9</color>
     <color name="subText">#676160</color>
+
+    <!-- Green color for safe condition -->
+    <color name="safeColor90">#5E8C59</color>
+    <color name="safeColor80">#679A62</color>
+    <color name="safeColor70">#85AE81</color>
+    <color name="safeColor60">#99BB96</color>
+
+    <!-- Yellow color for moderate condition -->
+    <color name="mediumColor50">#F6C380</color>
+    <color name="mediumColor40">#F5B767</color>
+    <color name="mediumColor30">#F2A541</color>
+
+    <!-- Red color for dangerous condition -->
+    <color name="dangerColor20">#F35933</color>
+    <color name="dangerColor10">#F03000</color>
+    <color name="dangerColor0">#DA2C00</color>
+
 </resources>
