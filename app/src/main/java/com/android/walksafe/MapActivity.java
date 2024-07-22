@@ -1,6 +1,8 @@
 package com.android.walksafe;
 
 import android.Manifest;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -107,6 +109,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private TextView routeNameTextView;
     private TextView routeTimeTextView;
     private TextView routeDistanceTextView;
+    private Dialog loadingDialog;
 
     private List<List<LatLng>> decodedPolylines;
 
@@ -138,6 +141,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
+
 
         // Initialize PlacesClient
         if (!Places.isInitialized()) {
@@ -189,6 +193,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         ArrayList<LatLng> polylinePoints = new ArrayList<>();
 
 
+
         // Real-time Navigation
         Button startNavigationButton = findViewById(R.id.startNavigationButton);
         startNavigationButton.setOnClickListener(new View.OnClickListener() {
@@ -230,7 +235,20 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
+    private void showLoading() {
+        if (loadingDialog == null) {
+            loadingDialog = new Dialog(this);
+            loadingDialog.setContentView(R.layout.loading_dialog);
+            loadingDialog.setCancelable(false); // Prevent dismiss on touch outside
+        }
+        loadingDialog.show();
+    }
 
+    private void hideLoading() {
+        if (loadingDialog != null && loadingDialog.isShowing()) {
+            loadingDialog.dismiss();
+        }
+    }
 
     private void moveBottomSheetMapUp() {
         if (bottomSheet.getHeight() > 0) {
@@ -528,6 +546,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     // Method to handle route container click
     private void onRouteContainerClicked(int routeIndex) {
+        // Show the loading indicator
+        showLoading();
+
         // Change background color of clicked route container
         if (clickedRouteIndex != -1) {
             View previousClickedView = routesContainer.getChildAt(clickedRouteIndex);
@@ -614,6 +635,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
     private int calculateSafetyIndex(List<LatLng> route, int routeIndex) {
+        showLoading();
         safetyIndex.fetchSafetyMetrics(route, new SafetyIndex.SafetyIndexCallback() {
             @Override
             public void onSafetyIndexCalculated(double safetyIndexValue) {
@@ -640,34 +662,34 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                         // Set custom progress drawable and safety status based on safety index
                         if (progress > 91) {
                             setProgressBarColor(overallsafetyProgressBar, R.color.safeColor90);
-                            safetyStatusTextView.setText("Safe to walk alone");
+                            safetyStatusTextView.setText("Safe to Walk Alone");
                         } else if (progress >= 81) {
                             setProgressBarColor(overallsafetyProgressBar, R.color.safeColor80);
-                            safetyStatusTextView.setText("Safe to walk alone");
+                            safetyStatusTextView.setText("Safe to Walk Alone");
                         } else if (progress >= 71) {
                             setProgressBarColor(overallsafetyProgressBar, R.color.safeColor70);
-                            safetyStatusTextView.setText("Safe to walk alone");
+                            safetyStatusTextView.setText("Safe to Walk Alone");
                         } else if (progress >= 61) {
                             setProgressBarColor(overallsafetyProgressBar, R.color.safeColor60);
-                            safetyStatusTextView.setText("Safe to walk alone");
+                            safetyStatusTextView.setText("Safe to Walk Alone");
                         } else if (progress >= 51) {
                             setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor50);
-                            safetyStatusTextView.setText("Take transportation");
+                            safetyStatusTextView.setText("Walk with a Friend");
                         } else if (progress >= 41) {
                             setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor40);
-                            safetyStatusTextView.setText("Take transportation");
+                            safetyStatusTextView.setText("Walk with a Friend");
                         } else if (progress >= 31) {
                             setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor30);
-                            safetyStatusTextView.setText("Take transportation");
+                            safetyStatusTextView.setText("Walk with a Friend");
                         } else if (progress >= 21) {
                             setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor20);
-                            safetyStatusTextView.setText("Take transportation");
+                            safetyStatusTextView.setText("Take Transportation");
                         } else if (progress >= 11) {
                             setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor10);
-                            safetyStatusTextView.setText("Take transportation");
+                            safetyStatusTextView.setText("Take Transportation");
                         } else {
                             setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor0);
-                            safetyStatusTextView.setText("Take transportation");
+                            safetyStatusTextView.setText("Take Transportation");
                         }
                     } else {
                         Log.e(TAG, "Failed to find one or more views for route index: " + routeIndex);
@@ -675,11 +697,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 } else {
                     Log.e(TAG, "Invalid route index: " + routeIndex);
                 }
+
+                hideLoading(); // Hide loading dialog after updating the UI
             }
         });
+
         return routeIndex;
     }
-
 
 
 
