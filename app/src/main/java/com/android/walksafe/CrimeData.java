@@ -1,48 +1,26 @@
 package com.android.walksafe;
 
-
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.util.Log;
 import android.location.Location;
 
 import com.google.android.gms.maps.model.Circle;
-import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class CrimeData {
-    // Weights for different crime categories (Example weights)
-    private static final double WEIGHT_THEFT = 0.2;
-    private static final double WEIGHT_PHYSICAL_INJURIES = 0.3;
-    private static final double WEIGHT_ROBBERY = 0.4;
-    private static final double WEIGHT_VAWC = 0.5;
-    private static final double WEIGHT_CHILD_ABUSE = 0.6;
-    private static final double WEIGHT_HOMICIDE = 0.8;
-    private static final double WEIGHT_RAPE = 0.7;
     private static final float CRIME_RADIUS_METERS = 30;
-    private static final float STROKE_WIDTH = 3f;
     private FirebaseFirestore db;
     private GoogleMap gMap;
     private Context context; // For fetching resources
     private List<Marker> crimeMarkers;
     private List<Circle> crimeCircles;
-
-
 
     public CrimeData(Context context, GoogleMap gMap) {
         this.context = context;
@@ -50,94 +28,43 @@ public class CrimeData {
         db = FirebaseFirestore.getInstance();
     }
 
-
-    // Method to retrieve crime data near a given location
+    // Method to retrieve crime data near a given location and filter by barangays
     public void fetchCrimeData(List<LatLng> route, CrimeDataCallback callback) {
+        // Define the list of barangays to filter
+        List<String> barangays = new ArrayList<>();
+        barangays.add("Session-Governor Pack Road");
+        barangays.add("Legarda-Burnham-Kisad");
+        barangays.add("AZCKO");
+
         db.collection("crime_incidents")
+                .whereIn("Barangay", barangays) // Filter by barangays
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     int crimeCount = 0;
+                    List<Crime> crimes = new ArrayList<>();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Double latitude = document.getDouble("location.latitude");
                         Double longitude = document.getDouble("location.longitude");
-                        if (latitude != null && longitude != null) {
+                        String barangay = document.getString("Barangay"); // Get the barangay from the document
+                        if (latitude != null && longitude != null && barangay != null) {
                             LatLng location = new LatLng(latitude, longitude);
                             if (isNearRoute(location, route)) {
                                 crimeCount++;
+                                crimes.add(new Crime(location, barangay)); // Add crime to list
                             }
                         }
                     }
                     Log.d("CrimeData", "Crime Count: " + crimeCount);
-                    callback.onCrimeDataReceived(crimeCount);
+                    callback.onCrimeDataReceived(crimeCount, crimes); // Pass crimes list to callback
                 })
                 .addOnFailureListener(e -> {
                     Log.e("CrimeData", "Error fetching crime data", e);
-                    callback.onCrimeDataReceived(0); // Handle failure by passing 0
+                    callback.onCrimeDataReceived(0, new ArrayList<>()); // Handle failure by passing 0 and empty list
                 });
     }
 
-
     public interface CrimeDataCallback {
-        void onCrimeDataReceived(int count);
-    }
-
-
-    // Calculate safety score based on crime data
-    private double calculateSafetyScore(List<LatLng> route) {
-        double totalWeightedCrimes = 0.0;
-
-        for (Marker marker : crimeMarkers) {
-            // Extract crime category from marker title
-            String markerTitle = marker.getTitle();
-            double weight = getWeightForCrimeCategory(markerTitle);
-            totalWeightedCrimes += weight;
-        }
-
-        // Normalize the total weighted crimes
-        double safetyScore = totalWeightedCrimes / getTotalWeightSum();
-
-        return safetyScore;
-    }
-
-
-    // Assign weights based on crime category
-    private double getWeightForCrimeCategory(String crimeCategory) {
-        switch (crimeCategory.toUpperCase()) {
-            case "THEFT":
-                return WEIGHT_THEFT;
-            case "PHYSICALINJURIES":
-                return WEIGHT_PHYSICAL_INJURIES;
-            case "ROBBERY":
-                return WEIGHT_ROBBERY;
-            case "VAWC":
-                return WEIGHT_VAWC;
-            case "CHILDABUSE":
-                return WEIGHT_CHILD_ABUSE;
-            case "HOMICIDE":
-                return WEIGHT_HOMICIDE;
-            case "RAPE":
-                return WEIGHT_RAPE;
-            default:
-                return 0.0; // Default weight if crime category is unknown
-        }
-    }
-
-    // Calculate total weight sum for normalization
-    private double getTotalWeightSum() {
-        // Sum of all weights
-        return WEIGHT_THEFT + WEIGHT_PHYSICAL_INJURIES + WEIGHT_ROBBERY +
-                WEIGHT_VAWC + WEIGHT_CHILD_ABUSE + WEIGHT_HOMICIDE + WEIGHT_RAPE;
-    }
-
-
-    public double calculateOverallCrimeWeight(List<LatLng> route) {
-        double totalWeightedCrimes = 0.0;
-        for (LatLng location : route) {
-            // Example calculation based on crime categories
-            // Adjust based on your actual weighting logic
-            totalWeightedCrimes += WEIGHT_THEFT + WEIGHT_PHYSICAL_INJURIES + WEIGHT_ROBBERY;
-        }
-        return totalWeightedCrimes;
+        void onCrimeDataReceived(int count, List<Crime> crimes); // Updated callback
     }
 
     // Method to check if a location is near the route
@@ -156,8 +83,6 @@ public class CrimeData {
         }
         return false;
     }
-
-
 
     // Method to calculate the distance from a point to a line segment
     private float calculateDistanceToSegment(LatLng point, LatLng start, LatLng end) {
@@ -201,5 +126,16 @@ public class CrimeData {
         float distanceToLine = location.distanceTo(projectionLocation);
 
         return distanceToLine;
+    }
+
+    // Inner class to represent a Crime object
+    public static class Crime {
+        public LatLng location;
+        public String barangay;
+
+        public Crime(LatLng location, String barangay) {
+            this.location = location;
+            this.barangay = barangay;
+        }
     }
 }
