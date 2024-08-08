@@ -3,8 +3,10 @@ package com.android.walksafe;
 import static android.content.ContentValues.TAG;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.location.Location;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -27,7 +29,6 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
@@ -52,9 +53,7 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
     private List<String> routeTime;
     private List<String> routeDistance;
 
-
-
-    public PathDirections (MapActivity mapActivity, MetricsActivity metricsActivity,CCTVData cctvData, CrimeData crimeData, PoliceStationData policeStationData, StreetlightData streetlightData) {
+    public PathDirections (MapActivity mapActivity, MetricsActivity metricsActivity, CCTVData cctvData, CrimeData crimeData, PoliceStationData policeStationData, StreetlightData streetlightData) {
         this.mapActivity = mapActivity;
         this.context = mapActivity.getApplicationContext();
 
@@ -83,12 +82,24 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
         this.requestAlternativeRoutes = requestAlternativeRoutes;
     }
 
+    // Start turn-by-turn navigation
+    public void startTurnByTurnNavigation(LatLng origin, LatLng destination) {
+        if (context != null && origin != null && destination != null) {
+            String uri = "google.navigation:q=" + destination.latitude + "," + destination.longitude + "&origin=" + origin.latitude + "," + origin.longitude;
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
+            intent.setPackage("com.google.android.apps.maps");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Add this line to fix the issue
+            context.startActivity(intent);
+        } else {
+            Log.e(TAG, "Invalid context, origin, or destination for navigation");
+        }
+    }
 
 
-    // AsyncTask method for fetching route data
     @Override
     protected List<List<LatLng>> doInBackground(Location... locations) {
-        if (destination == null) {
+        if (locations == null || locations.length == 0 || locations[0] == null) {
+            Log.e(TAG, "Location object is null");
             return null;
         }
 
@@ -152,12 +163,13 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
         return decodedPolylines;
     }
 
-
-
-
-    // Inside onPostExecute method
     @Override
     protected void onPostExecute(List<List<LatLng>> decodedPolylines) {
+        if (gMap == null) {
+            Log.e(TAG, "GoogleMap object is null");
+            return;
+        }
+
         this.decodedPolylines = decodedPolylines; // Store decoded polylines for later use
         gMap.clear(); // Clear previous polylines from the map
         polylines.clear(); // Clear the list of polylines
@@ -172,9 +184,9 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
             List<LatLng> decodedPolyline = decodedPolylines.get(i);
 
             // Fetch route details
-            String currentRouteName = routeName.get(i); // Sample route name
-            String currentRouteTime = routeTime.get(i); // Sample route time
-            String currentRouteDistance = routeDistance.get(i); // Sample route distance
+            String currentRouteName = routeName.get(i);
+            String currentRouteTime = routeTime.get(i);
+            String currentRouteDistance = routeDistance.get(i);
 
             // Add details to lists
             routeNames.add(currentRouteName);
@@ -229,68 +241,23 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
         }
     }
 
-
-
-
-
-
-
-    // Modify the resetPolylinesColor method
-    void resetPolylinesColor() {
-        for (Polyline p : polylines) {
-            if (p != primaryPolyline) {
-                p.setColor(Color.GRAY);
-            }
+    // Method to start navigation using a route
+    public void startTurnByTurnNavigation(List<LatLng> route) {
+        if (route != null && !route.isEmpty()) {
+            LatLng origin = route.get(0);
+            LatLng destination = route.get(route.size() - 1);
+            startTurnByTurnNavigation(origin, destination);
+        } else {
+            Log.e(TAG, "Invalid route for navigation");
         }
     }
 
 
-
-    // Helper method to zoom to clicked polyline
-    private void zoomToPolyline(Polyline polyline) {
-        LatLngBounds.Builder builder = new LatLngBounds.Builder();
-        List<LatLng> points = polyline.getPoints();
-        for (LatLng point : points) {
-            builder.include(point);
-        }
-        LatLngBounds bounds = builder.build();
-        gMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
-    }
-
-
-
-    // Helper method to calculate distance between two LatLng points
-    private double computeDistance(LatLng from, LatLng to) {
-        // You can use the Haversine formula or the Google Maps Distance Matrix API to compute accurate distances.
-        // For simplicity, here's a simple computation of distance between two LatLng points.
-        double earthRadius = 6371; // Earth's radius in kilometers
-        double dLat = Math.toRadians(to.latitude - from.latitude);
-        double dLng = Math.toRadians(to.longitude - from.longitude);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(Math.toRadians(from.latitude)) * Math.cos(Math.toRadians(to.latitude)) *
-                        Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return earthRadius * c;
-    }
-
-
-
-    // Helper method to compute distance of a polyline (you can use a more accurate method)
-    private double computePolylineDistance(List<LatLng> polyline) {
-        double distance = 0;
-        for (int i = 0; i < polyline.size() - 1; i++) {
-            distance += computeDistance(polyline.get(i), polyline.get(i + 1));
-        }
-        return distance;
-    }
-
-
-
-    // Decode polyline string to list of LatLng points
     private List<LatLng> decodePolyline(String encoded) {
         List<LatLng> poly = new ArrayList<>();
         int index = 0, len = encoded.length();
         int lat = 0, lng = 0;
+
         while (index < len) {
             int b, shift = 0, result = 0;
             do {
@@ -309,8 +276,7 @@ public class PathDirections extends AsyncTask<Location, Void, List<List<LatLng>>
             } while (b >= 0x20);
             int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
             lng += dlng;
-            LatLng p = new LatLng((((double) lat / 1E5)),
-                    (((double) lng / 1E5)));
+            LatLng p = new LatLng((((lat * 1E-5))), (((lng * 1E-5))));
             poly.add(p);
         }
         return poly;

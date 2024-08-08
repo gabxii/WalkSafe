@@ -2,7 +2,6 @@ package com.android.walksafe;
 
 import android.Manifest;
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -13,9 +12,11 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -125,6 +126,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private List<String> routeDistances;
     private List<String> routeNames;
     private List<List<LatLng>> routes;
+
     private int clickedRouteIndex = -1;
 
     private LocationCallback locationCallback; // Declare here
@@ -133,6 +135,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.map_activity);
+
+        // Show the disclaimer dialog
+        showDisclaimerDialog();
 
         initializePlaces(); // Initialize Places SDK and Autocomplete Fragment
 
@@ -194,16 +199,21 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
 
-        // Real-time Navigation
+        // Set up the start navigation button click listener
         Button startNavigationButton = findViewById(R.id.startNavigationButton);
         startNavigationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (clickedRouteIndex != -1) {
                     List<LatLng> route = routes.get(clickedRouteIndex);
-                    if (route != null && !route.isEmpty()) {
-                        // Pass the route to start real-time street view navigation
-                        startRealTimeStreetViewNavigation(route);
+                    if (route != null && route.size() >= 2) {
+                        // Use the first and last points of the route for turn-by-turn navigation
+                        LatLng origin = route.get(0);
+                        LatLng destination = route.get(route.size() - 1);
+
+                        // Create a PathDirections instance and start turn-by-turn navigation
+                        new PathDirections(MapActivity.this, metricsActivity, cctvData, crimeData, policeStationData, streetlightData)
+                                .startTurnByTurnNavigation(origin, destination);
                     } else {
                         Toast.makeText(MapActivity.this, "Route is not valid", Toast.LENGTH_SHORT).show();
                     }
@@ -212,6 +222,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 }
             }
         });
+
+
+
 
 
 
@@ -233,6 +246,15 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 // Optionally, handle slide offset if needed
             }
         });
+    }
+
+    private void showDisclaimerDialog() {
+        DisclaimerDialogFragment disclaimerDialog = new DisclaimerDialogFragment();
+        disclaimerDialog.setOnDismissListener(() -> {
+            // Handle any actions after the dialog is dismissed
+            // For example, initialize other components or proceed with the map setup
+        });
+        disclaimerDialog.show(getSupportFragmentManager(), "DisclaimerDialog");
     }
 
     private void showLoading() {
@@ -327,123 +349,24 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
 
-    private void startRealTimeStreetViewNavigation(List<LatLng> route) {
-        if (route != null && !route.isEmpty()) {
-            // Use the starting point of the route for Street View
-            LatLng startPoint = route.get(0);
-            String uri = String.format("google.streetview:cbll=%f,%f", startPoint.latitude, startPoint.longitude);
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
-            intent.setPackage("com.google.android.apps.maps");
+//    // This method should be called when you want to start navigation
+//    private void startNavigation(LatLng destination) {
+//        // Example origin; use actual user location
+//        Location origin = new Location("");
+//        origin.setLatitude(gMap.getCameraPosition().target.latitude);
+//        origin.setLongitude(gMap.getCameraPosition().target.longitude);
+//
+//        pathDirections.setGoogleMap(gMap);
+//        pathDirections.setDestination(destination, "Destination Name");
+//        pathDirections.setRequestAlternativeRoutes(true); // Set as needed
+//        pathDirections.execute(origin);
+//    }
 
-            // Start the intent to launch Google Maps in Street View
-            if (intent.resolveActivity(getPackageManager()) != null) {
-                startActivity(intent);
-            } else {
-                Toast.makeText(this, "Google Maps is not installed", Toast.LENGTH_SHORT).show();
-            }
 
-            // Also, show the route with directions on the map
-            // Call this after starting Street View to ensure the map is ready
-            showDirectionsOnMap(route);
-        } else {
-            Toast.makeText(this, "Invalid route for Street View", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void showDirectionsOnMap(List<LatLng> route) {
-        String url = getDirectionsUrl(route);
-        new FetchUrl().execute(url);
-    }
-
-    private String getDirectionsUrl(List<LatLng> route) {
-        StringBuilder urlString = new StringBuilder("https://maps.googleapis.com/maps/api/directions/json?");
-        urlString.append("origin=").append(route.get(0).latitude).append(",").append(route.get(0).longitude);
-        urlString.append("&destination=").append(route.get(route.size() - 1).latitude).append(",").append(route.get(route.size() - 1).longitude);
-        urlString.append("&waypoints=");
-        for (int i = 1; i < route.size() - 1; i++) {
-            urlString.append(route.get(i).latitude).append(",").append(route.get(i).longitude);
-            if (i < route.size() - 2) {
-                urlString.append("|");
-            }
-        }
-        urlString.append("&key=").append(getString(R.string.api_key)); // Your API key
-        return urlString.toString();
-    }
-
-    private class FetchUrl extends AsyncTask<String, Void, String> {
-        @Override
-        protected String doInBackground(String... url) {
-            // Fetch data from URL
-            String data = "";
-            try {
-                URL urlObj = new URL(url[0]);
-                HttpURLConnection urlConnection = (HttpURLConnection) urlObj.openConnection();
-                InputStream inputStream = urlConnection.getInputStream();
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-                StringBuilder stringBuilder = new StringBuilder();
-                String line;
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line).append("\n");
-                }
-                bufferedReader.close();
-                data = stringBuilder.toString();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return data;
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            // Parse the result and display directions
-            parseDirections(result);
-        }
-    }
-
-    private void parseDirections(String jsonData) {
-        // Parse the JSON response and draw the route on the map
-        try {
-            JSONObject jsonObject = new JSONObject(jsonData);
-            JSONArray routes = jsonObject.getJSONArray("routes");
-            if (routes.length() > 0) {
-                JSONObject route = routes.getJSONObject(0);
-                JSONObject overviewPolyline = route.getJSONObject("overview_polyline");
-                String points = overviewPolyline.getString("points");
-                List<LatLng> decodedPath = decodePoly(points);
-                gMap.addPolyline(new PolylineOptions().addAll(decodedPath).width(12).color(Color.BLUE));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private List<LatLng> decodePoly(String encoded) {
-        List<LatLng> poly = new ArrayList<>();
-        int index = 0, len = encoded.length();
-        int lat = 0, lng = 0;
-
-        while (index < len) {
-            int b, shift = 0, result = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1f) << shift;
-                shift += 5;
-            } while (b >= 0x20);
-            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-            lat += dlat;
-            shift = 0;
-            result = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1f) << shift;
-                shift += 5;
-            } while (b >= 0x20);
-            int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-            lng += dlng;
-            LatLng p = new LatLng((((lat * 1E-5))), (((lng * 1E-5))));
-            poly.add(p);
-        }
-        return poly;
+    private void updateInstructionsList(List<String> instructions) {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, instructions);
+        ListView listView = findViewById(R.id.instructions_list_view); // Ensure you have a ListView in your layout
+        listView.setAdapter(adapter);
     }
 
 
@@ -548,6 +471,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private void onRouteContainerClicked(int routeIndex) {
         // Show the loading indicator
         showLoading();
+        policeStationData.clearPoliceStationData();
 
         // Change background color of clicked route container
         if (clickedRouteIndex != -1) {
@@ -655,42 +579,53 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                         Log.d(TAG, "Updating safety index UI for route index: " + routeIndex);
 
                         // Update the safety index and progress bar
-                        overallsafetyCountTextView.setText(String.valueOf(safetyIndexValue));
+                        overallsafetyCountTextView.setText(String.format("%.2f", safetyIndexValue));
                         int progress = (int) Math.round(safetyIndexValue);
                         overallsafetyProgressBar.setProgress(progress);
 
                         // Set custom progress drawable and safety status based on safety index
-                        if (progress > 91) {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor90);
-                            safetyStatusTextView.setText("Safe to Walk Alone");
-                        } else if (progress >= 81) {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor80);
-                            safetyStatusTextView.setText("Safe to Walk Alone");
-                        } else if (progress >= 71) {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor70);
-                            safetyStatusTextView.setText("Safe to Walk Alone");
-                        } else if (progress >= 61) {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.safeColor60);
-                            safetyStatusTextView.setText("Safe to Walk Alone");
-                        } else if (progress >= 51) {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor50);
-                            safetyStatusTextView.setText("Walk with a Friend");
-                        } else if (progress >= 41) {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor40);
-                            safetyStatusTextView.setText("Walk with a Friend");
-                        } else if (progress >= 31) {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.mediumColor30);
-                            safetyStatusTextView.setText("Walk with a Friend");
-                        } else if (progress >= 21) {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor20);
-                            safetyStatusTextView.setText("Take Transportation");
-                        } else if (progress >= 11) {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor10);
-                            safetyStatusTextView.setText("Take Transportation");
+                        int colorResId;
+                        String statusText;
+
+                        // Normalize safety index value to percentage
+                        double percentage = (safetyIndexValue / 100.0) * 100.0;
+
+                        if (percentage > 91) {
+                            colorResId = R.color.safeColor90;
+                            statusText = "Safe to Walk Alone";
+                        } else if (percentage >= 81) {
+                            colorResId = R.color.safeColor80;
+                            statusText = "Safe to Walk Alone";
+                        } else if (percentage >= 71) {
+                            colorResId = R.color.safeColor70;
+                            statusText = "Safe to Walk Alone";
+                        } else if (percentage >= 61) {
+                            colorResId = R.color.safeColor60;
+                            statusText = "Safe to Walk Alone";
+                        } else if (percentage >= 51) {
+                            colorResId = R.color.mediumColor50;
+                            statusText = "Consider a Walking Buddy";
+                        } else if (percentage >= 41) {
+                            colorResId = R.color.mediumColor40;
+                            statusText = "Consider a Walking Buddy";
+                        } else if (percentage >= 31) {
+                            colorResId = R.color.mediumColor30;
+                            statusText = "Consider a Walking Buddy";
+                        } else if (percentage >= 21) {
+                            colorResId = R.color.dangerColor20;
+                            statusText = "Opt for Transportationn";
+                        } else if (percentage >= 11) {
+                            colorResId = R.color.dangerColor10;
+                            statusText = "Opt for Transportation";
                         } else {
-                            setProgressBarColor(overallsafetyProgressBar, R.color.dangerColor0);
-                            safetyStatusTextView.setText("Take Transportation");
+                            colorResId = R.color.dangerColor0;
+                            statusText = "Opt for Transportation";
                         }
+
+                        // Set the progress bar color
+                        setProgressBarColor(overallsafetyProgressBar, colorResId);
+                        // Update the safety status text
+                        safetyStatusTextView.setText(statusText);
                     } else {
                         Log.e(TAG, "Failed to find one or more views for route index: " + routeIndex);
                     }
@@ -706,16 +641,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-
-
-
-
     private int fetchCrimeData(List<LatLng> route, int i) {
-
         crimeData.fetchCrimeData(route, new CrimeData.CrimeDataCallback() {
             @Override
-            public void onCrimeDataReceived( int count) {
-                Log.d(TAG, "CCTV data received: " + count);
+            public void onCrimeDataReceived(int count, List<CrimeData.Crime> crimes) {
+                Log.d(TAG, "Crime data received: " + count);
                 crimeCount = count; // Update cctvCount variable
                 updateMetricsActivityCrimeCount(count);
             }
@@ -740,7 +670,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         policeStationData.fetchPoliceStationData(route, new PoliceStationData.PoliceStationDataCallback() {
             @Override
             public void onPoliceStationDataReceived( int count) {
-                Log.d(TAG, "Police station data received: " + count);
+                Log.d(TAG, "Police Station data received: " + count);
                 policeCount = count; // Update policeCount variable
                 updateMetricsActivityPoliceCount( count);
             }
@@ -820,16 +750,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-    // Helper method to zoom to clicked polyline
-    private void zoomToPolyline(Polyline polyline) {
-        LatLngBounds.Builder builder = new LatLngBounds.Builder();
-        List<LatLng> points = polyline.getPoints();
-        for (LatLng point : points) {
-            builder.include(point);
-        }
-        LatLngBounds bounds = builder.build();
-        gMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
-    }
 
     public void clearMap() {
         if (gMap != null) {
@@ -841,16 +761,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     // Request User Location
     private void getLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            locationPermissionGranted = true;
-        } else {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        } else {
+            locationPermissionGranted = true;
         }
     }
+
 
     // Button for Current Location
     private void updateLocationUI() {
@@ -865,15 +785,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 gMap.setMyLocationEnabled(false);
                 gMap.getUiSettings().setMyLocationButtonEnabled(false);
                 lastKnownLocation = null;
-                getLocationPermission();
             }
-        } catch (SecurityException e)  {
+        } catch (SecurityException e) {
             Log.e("Exception: %s", e.getMessage());
         }
     }
 
 
-    // Zooms in for Current User Location
+
     private void getCurrentLocation() {
         try {
             if (locationPermissionGranted) {
@@ -890,7 +809,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                             Log.d(TAG, "Current location is null. Using defaults.");
                             Log.e(TAG, "Exception: %s", task.getException());
                             gMap.moveCamera(CameraUpdateFactory
-                                    .newLatLngZoom(defaultLocation, 15));
+                                    .newLatLngZoom(defaultLocation, 100));
                             gMap.getUiSettings().setMyLocationButtonEnabled(false);
                         }
                     }
@@ -902,22 +821,19 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
+
     // User Location Approval
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        locationPermissionGranted = false;
         if (requestCode == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION) {
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                locationPermissionGranted = true;
-            }
+            locationPermissionGranted = grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            updateLocationUI();
+            getCurrentLocation(); // Retry fetching location after permission is granted
         }
-        updateLocationUI();
-        getCurrentLocation();
     }
-
 
 }
